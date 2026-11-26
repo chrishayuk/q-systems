@@ -169,6 +169,14 @@ vertex numbers**.
     samples are.
   - But the graph is finite: it is a model of the sentences of given trees,
     and gives zero to every deeper sentence. (E16, not historical)
+- **An open model.** The synthesis rules read as a grammar give exactly the
+  machine's strings on 8,414 trees.
+  - With a prior over trees, it predicts the next token with no tree given
+    and no bound on depth.
+  - Every sample is grammatical, and every deeper sentence gets a
+    probability.
+  - Merging equal derivations saves nothing, because the grammar is
+    unambiguous. (E17, not historical)
 - **Arithmetic, binary increment, reversal and rule 110 can all be
   written.**
   - Anything repeated becomes a left-to-right scan with an accumulator,
@@ -291,6 +299,7 @@ Other notation:
 | `src/matching.rs` | parameters, substitution, conditions |
 | `src/machine.rs` | graphs of strings and the two phases |
 | `src/lm.rs` | **not historical**: a graph of strings read as a language model (E16) |
+| `src/open.rs` | **not historical**: the synthesis rules read as a grammar with a prior over trees, for prediction with no tree given (E17) |
 | `src/experimental.rs` | **not historical**: the machine with equal arrows merged, or purified by strings (E11-E13) |
 | `src/print.rs` | the `-01- … -02-` printout |
 | `examples/` | every example of C70, with its `.out` |

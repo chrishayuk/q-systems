@@ -1006,3 +1006,152 @@ fn e16_next_token() {
         (16, 0, 91, 29, 300)
     );
 }
+
+use qsystems::open::{self, Model, Prior};
+
+/// QSYS-E17 (an experiment, not historical): the synthesis system read as a
+/// grammar, with no tree given and no bound on depth.
+#[test]
+fn e17_open_model() {
+    let sys = paraphrase();
+    let derivations = |t: &str| -> BTreeMap<Vec<String>, u64> {
+        let mut want: BTreeMap<Vec<String>, u64> = BTreeMap::new();
+        for s in tokens(&synthesis(t)) {
+            *want.entry(s).or_default() += 1;
+        }
+        want
+    };
+    // 1. The reading gives the machine's strings, path for derivation: every
+    //    tree of depth at most 1, 300 of depth 2, and the chains of depth 5.
+    let mut trees: Vec<String> = clauses(1).into_iter().map(|c| format!("PI({c})")).collect();
+    let deep: Vec<String> = clauses(1).into_iter().filter(|c| c.contains("PH(")).collect();
+    let mut rng = Rng(11);
+    for _ in 0..300 {
+        let v = ["DETRUIT", "ETONNE", "CONSTATE"][(rng.draw() % 3) as usize];
+        let a = &deep[(rng.draw() as usize) % deep.len()];
+        let b = &deep[(rng.draw() as usize) % deep.len()];
+        trees.push(format!("PI(V({v}),PH({a}),PH({b}))"));
+    }
+    for shape in ["object", "subject"] {
+        trees.push(format!("PI({})", clause(shape, 5, &mut 0)));
+    }
+    for t in &trees {
+        assert_eq!(
+            open::strings_of(&open::pi_of(&parse_tree(t).unwrap())),
+            derivations(t),
+            "{t}"
+        );
+    }
+    println!("{} trees: the grammar gives exactly the machine's strings", trees.len());
+    assert_eq!(trees.len(), 8112 + 302);
+
+    // 2. With the prior bounded at depth 1, prediction by expanding only
+    //    what the prefix needs agrees with listing every derivation.
+    let p = Prior { q: 0.25 };
+    let mut all: BTreeMap<Vec<String>, f64> = BTreeMap::new();
+    let mut work: Vec<(Vec<String>, open::Stack, f64)> = vec![(Vec::new(), vec![open::Sym::Top(Some(1))], 1.0)];
+    while let Some((words, mut st, pr)) = work.pop() {
+        match st.pop() {
+            None => *all.entry(words).or_default() += pr,
+            Some(open::Sym::Word(w)) => {
+                let mut ws = words;
+                ws.push(w.to_string());
+                work.push((ws, st, pr));
+            }
+            Some(s) => {
+                for (q, rhs) in open::expand(&s, p) {
+                    let mut n = st.clone();
+                    n.extend(rhs.into_iter().rev());
+                    work.push((words.clone(), n, pr * q));
+                }
+            }
+        }
+    }
+    assert_eq!(all.len(), 131_424);
+    assert!((all.values().sum::<f64>() - 1.0).abs() < 1e-9);
+    let sentences: Vec<&Vec<String>> = all.keys().collect();
+    let mut checked = 0;
+    for _ in 0..200 {
+        let s = sentences[(rng.draw() as usize) % sentences.len()];
+        let mut m = Model::new(p, Some(1), true);
+        for i in 0..=s.len() {
+            let mut want: BTreeMap<String, f64> = BTreeMap::new();
+            for (t, pr) in all.range(s[..i].to_vec()..).take_while(|(t, _)| t.starts_with(&s[..i])) {
+                *want.entry(t.get(i).cloned().unwrap_or(END.into())).or_default() += pr;
+            }
+            let got = m.next();
+            assert_eq!(got.keys().collect::<Vec<_>>(), want.keys().collect::<Vec<_>>());
+            for (k, v) in &want {
+                assert!((got[k] - v).abs() < 1e-12 * v.max(1e-300) + 1e-15, "{k}");
+            }
+            checked += 1;
+            if i < s.len() {
+                m.step(&s[i]);
+            }
+        }
+    }
+    println!(
+        "depth at most 1: 131,424 sentences, probabilities summing to 1; {checked} prefixes agree with listing them"
+    );
+
+    // 3. No bound on depth. The 300 deeper sentences of E16 and the
+    //    9,565,938-paraphrase tree: every sentence gets a probability above
+    //    zero. Samples are judged by the report's analysis.
+    let grammatical = |s: &[String]| -> bool {
+        let chain: Vec<Tree> = s.iter().map(|w| parse_tree(w).unwrap()).collect();
+        let o = apply(&sys[0], &Graph::from_chain(&chain), Limits { max_arrows: 200_000 });
+        let r = strings_text(&o.result);
+        o.converged && r.len() == 1 && r[0].starts_with("PI(") && r[0].ends_with(" + .")
+    };
+    let probability = |s: &[String], merge: bool| -> (f64, usize) {
+        let mut m = Model::new(p, None, merge);
+        let mut most = 0;
+        for w in s {
+            m.step(w);
+            most = most.max(m.hyps.len());
+        }
+        (m.next().get(END).copied().unwrap_or(0.0), most)
+    };
+    let big = Lm::new(&synthesis(&format!("PI({})", clause("both", 3, &mut 0))));
+    let mut rng = Rng(5);
+    let (mut nonzero, mut most) = (0, 0);
+    for _ in 0..20 {
+        let s = lm::generate(&big, false, &mut rng);
+        let (pr, m) = probability(&s, true);
+        nonzero += (pr > 0.0) as usize;
+        most = most.max(m);
+    }
+    let mut rng = Rng(7);
+    let mut deep_nonzero = 0;
+    for _ in 0..300 {
+        let v = ["DETRUIT", "ETONNE", "CONSTATE"][(rng.draw() % 3) as usize];
+        let a = format!("PH({})", deep[(rng.draw() as usize) % deep.len()]);
+        let b = format!("SN({})", NAMES[(rng.draw() % 4) as usize]);
+        let tree = if rng.draw().is_multiple_of(2) {
+            format!("PI(V({v}),{a},{b})")
+        } else {
+            format!("PI(V({v}),{b},{a})")
+        };
+        let s = lm::generate(&Lm::new(&synthesis(&tree)), false, &mut rng);
+        deep_nonzero += (probability(&s, true).0 > 0.0) as usize;
+    }
+    let mut seed = 3u64;
+    let (mut ok, mut beyond) = (0, 0);
+    for _ in 0..300 {
+        let s = open::sample(p, None, &mut seed);
+        ok += grammatical(&s) as usize;
+        beyond += !all.contains_key(&s) as usize;
+    }
+    // Merging equal hypotheses: on the longest of these sentences, with and
+    // without.
+    let longest = lm::generate(&big, true, &mut Rng(1));
+    let (with, without) = (probability(&longest, true), probability(&longest, false));
+    println!(
+        "no bound: 300/300 deeper sentences of E16 above zero: {deep_nonzero}; 20 of the 9,565,938: {nonzero} (at most {most} hypotheses live); \
+         300 samples, {ok} grammatical, {beyond} beyond depth 1; the 88-word sentence, merged {with:?}, not merged {without:?}"
+    );
+    assert_eq!((deep_nonzero, nonzero, ok), (300, 20, 300));
+    assert_eq!(with.1, without.1);
+    assert!((with.0 - without.0).abs() <= 1e-12 * with.0);
+    assert_eq!((beyond, most, with.1), (53, 2160, 2160));
+}

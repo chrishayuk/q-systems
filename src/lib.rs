@@ -10,6 +10,7 @@ pub mod lm;
 pub mod lsp;
 pub mod machine;
 pub mod matching;
+pub mod open;
 pub mod play;
 pub mod print;
 pub mod report;

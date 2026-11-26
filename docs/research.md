@@ -483,3 +483,67 @@ into one graph: the 8,112 trees as parallel arrows, then synthesis.
     trees.
   - 209 of its 300 are not French by the grammar.
   - It gives zero probability to 284 of the 300 deeper sentences.
+
+## QSYS-E17. An open model: no tree given, no bound on depth (an experiment, not historical)
+
+E16's graph is closed. It models the sentences of the trees it was built
+from and gives zero to everything else. E17 predicts from the grammar
+itself.
+
+**The reading.** `src/open.rs` reads the synthesis system of section 11 as
+a grammar. Its symbols are:
+- the clause `PI(v,a,b)`;
+- a preposition marker with its argument: `SUJ + a`, `OBJ + a`, `PPA + a`,
+  `DDE + a`.
+
+Each of the sixteen rules becomes a rewriting of one of these symbols:
+- active or passive;
+- for a name, its prefix and the name;
+- for a clause, the clause after `LE FAIT QUE`, `QUE`, `PAR LE FAIT QUE` or
+  `DE CE QUE`, or the clause nominalised.
+
+The reading was made by hand. It is checked against the historical machine:
+- for each of 8,414 trees, it gives exactly the strings the machine's
+  synthesis graph carries, each as many times as the graph has paths for it;
+- the trees are all 8,112 of depth at most 1, 300 random trees with
+  clauses on both sides at depth 2, and the chains of depth 5 in the
+  object and the subject.
+
+**The prior.** An argument not yet known is drawn only when the prefix
+needs it:
+- one of the four names, or, with probability q = 1/4, a clause;
+- a clause has one of the three verbs, and two arguments, again unknown;
+- each choice between two rewritings has probability 1/2.
+
+With q below 1/2 a sentence is finite with probability 1. This is a
+probabilistic context-free grammar in all but name, with probabilities on
+the rewritings (Q-LM-3 in the plan, not the uniform choice among a tree's
+paraphrases of E16).
+
+**Prediction.** It keeps every partial derivation consistent with the
+prefix, expanded only until its next word is known. No rewriting of this
+grammar begins with itself, so the expansion stops. The live derivations
+are E16's graph built as the prefix asks: a working state, not a catalogue.
+
+| | |
+|---|---:|
+| depth at most 1: sentences, probabilities summing to 1 | 131,424 |
+| prefixes of 200 of them where prediction equals listing every derivation | 3,287 of 3,287 |
+| E16's 300 deeper sentences given a probability above zero | 300 of 300 |
+| sentences of the 9,565,938-paraphrase tree, 20 sampled, above zero | 20 of 20 |
+| samples judged grammatical by the report's own analysis | 300 of 300 |
+| samples of depth 2 or more | 53 of 300 |
+| most derivations live at once, reading those sentences | 2,160 |
+
+- **It is exact and open.** Every sample is grammatical, which the trigram
+  managed for 91 of 300. It gives every deeper sentence a probability, where
+  the closed graph and the trigram gave 0 and 16 of 300. A sixth of its
+  samples are deeper than anything E16's graph of the language holds.
+- **Merging equal derivations does nothing here.** With and without it,
+  the 88-word sentence is read with at most 2,160 live derivations and gets
+  the same probability. The grammar is unambiguous, so no two derivations
+  of a prefix leave the same work to do. Merging is a saving only where
+  there is something equal to merge (E11), and this grammar has nothing.
+- **It is not learned.** The grammar was read off the report's rules by
+  hand and checked against the machine. Learning such rules from sentences
+  is the next question, not something shown here.
