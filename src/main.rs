@@ -13,6 +13,7 @@ usage:
   qsys check PROGRAM       read a treatment and list its phases and rules,
                            as they are applied (-- filled in, -INV- done)
   qsys json PROGRAM DATA   the run as JSON, for the playground
+  qsys lsp                 a language server on standard input and output
 
   PROGRAM may be - for the standard input; --data TEXT gives the data
   in place of a DATA file.
@@ -69,6 +70,13 @@ fn main() {
         pos.push(String::new());
     }
     match pos.iter().map(|s| s.as_str()).collect::<Vec<_>>().as_slice() {
+        ["lsp"] => {
+            let stdin = std::io::stdin();
+            if let Err(e) = qsystems::lsp::serve(&mut stdin.lock(), &mut std::io::stdout()) {
+                eprintln!("qsys: {e}");
+                exit(1)
+            }
+        }
         ["json", p, d] => println!("{}", play(&read(p), &data_of(d), opts.limits).to_text()),
         ["check", p] => match systems(&read(p)) {
             Ok(sys) => {

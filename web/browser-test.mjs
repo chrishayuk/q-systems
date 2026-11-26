@@ -83,6 +83,33 @@ try {
   check((await js(`document.querySelector(".qs-result").textContent.trim().split("\\n").length`)) === 35, "paraphrase: phase 2 prints 35 paths");
   check((await js(`document.querySelectorAll(".qs-graph .qs-arrow").length`)) === 330, "paraphrase: phase 2 draws its 330 arrows");
 
+  // zoom to fit, fade all but the step, and hover on a rule from the language server
+  await js(`document.querySelector('.qs-tools button[aria-label="Fit the width"]').click()`);
+  check((await js(`parseFloat(document.querySelector(".qs-graph").style.width) <= document.querySelector(".qs-canvas").clientWidth`)), "paraphrase: fit makes the graph as wide as its box");
+  await js(`(() => { const f = document.querySelector(".qs-tools input"); f.checked = true; f.dispatchEvent(new Event("change")); })()`);
+  await slide(40);
+  check(await js(`document.querySelector(".qs-graph").classList.contains("qs-focus")`), "paraphrase: fading all but the step");
+  const hover = await js(`(async () => {
+    const area = document.querySelector(".qs-text");
+    const lines = area.value.split("\\n");
+    const line = lines.findIndex((l) => l.startsWith("SUJ + PH(U*)"));
+    const cs = getComputedStyle(area);
+    const r = area.getBoundingClientRect();
+    area.scrollTop = 0;
+    const lh = parseFloat(cs.lineHeight);
+    const y = r.top + parseFloat(cs.paddingTop) + line * lh + lh / 2;
+    area.scrollTop = Math.max(0, y - r.top - 100);
+    const x = r.left + parseFloat(cs.paddingLeft) + 12;
+    area.dispatchEvent(new MouseEvent("mousemove", { clientX: x, clientY: y - area.scrollTop, bubbles: true }));
+    for (let i = 0; i < 50; i++) {
+      await new Promise((ok) => setTimeout(ok, 100));
+      const box = document.querySelector(".qs-hover");
+      if (box && !box.hidden) return box.textContent;
+    }
+    return "";
+  })()`);
+  check(/Phase 1, rule 4/.test(hover), `paraphrase: hover on a rule shows it as applied: ${hover.slice(0, 80)}`);
+
   // the non-converging rules of p. 30
   await open("structure");
   check(await js(`document.querySelector(".qs-tabs small.bad") !== null`), "structure: the phase is marked as not converging");

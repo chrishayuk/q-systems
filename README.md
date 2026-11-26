@@ -84,6 +84,11 @@ vertex numbers**.
 - **The exception is the order of the last printout.** The 18 sentences of
   pp. 40-41 come out in exactly the reverse of the paper's order. No one
   rule for ordering fits both pp. 38-40 and pp. 40-41 (decision 20).
+- **Tools.** The same machine runs in four places:
+  - `qsys` on the command line;
+  - a playground in the browser that steps through every rule application;
+  - a language server;
+  - a VS Code extension ([`editors/`](editors)).
 - **Not seen.** The TAUM grammars of *TAUM 71*, the only large Q-system
   programs, and any later version of the formalism.
 - **Not yet checked.** Nothing has been checked by a person against the
@@ -120,6 +125,21 @@ vertex numbers**.
 The experiments, with their numbers, are in
 [`docs/research.md`](docs/research.md).
 
+## Learn it
+
+[`tutorial/`](tutorial) teaches the language in nine short chapters. Every
+example in it is run by `cargo test`, and its printout is checked:
+
+1. a graph of every alternative;
+2. labels, trees and graphs;
+3. how a system is applied: add, then remove;
+4. parameters and conditions;
+5. every alternative at once;
+6. running a system backwards;
+7. treatments;
+8. the tools;
+9. reference.
+
 ## Install and use
 
 You need [Rust](https://rustup.rs). There are no dependencies.
@@ -131,6 +151,7 @@ qsys --det examples/abc.q examples/abc.dat    # every rule application, as -DET-
 qsys --width 72 PROGRAM DATA                  # fold lines as the line printer did
 qsys check examples/paraphrase.q              # the rules as applied: -- filled in, -INV- done
 qsys json PROGRAM DATA                        # every arrow of every phase, for the playground
+qsys lsp                                      # a language server, for any editor
 cargo test                                    # the acceptance tests, the examples, the experiments
 ```
 
@@ -158,6 +179,10 @@ application of one rule:
 - the path it added is in gold;
 - the last two steps are the second phase, first what it removes (rewritten
   arrows struck through, stranded ones faded), then what is left.
+
+Hovering over the text gives the language server's help. *fit*, `−` and `+`
+zoom the graph, and *fade all but this step* dims everything but the current
+application.
 
 `mountPlayground(host, {initial})` mounts it in another page.
 `mountRunner(host, {example, args})` mounts a single notebook cell that runs
@@ -217,7 +242,10 @@ Other notation:
 | `research/` | the inputs of the experiments |
 | `tests/c70/` | C70's printed results, transcribed from the scan |
 | `src/play.rs` | the run as JSON, for the playground (`qsys json`) |
+| `src/lsp.rs` | the language server (`qsys lsp`) |
 | `web/` | the playground |
+| `editors/` | the VS Code extension, and notes for other editors |
+| `tutorial/` | the tutorial; `tests/tutorial.rs` runs its examples |
 
 ## Licence
 

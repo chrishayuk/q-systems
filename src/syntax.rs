@@ -96,6 +96,10 @@ pub struct Rule {
     pub cond: Option<Cond>,
     /// The line of the source the rule starts on.
     pub line: usize,
+    /// Where the rule is in the source, in characters: from its first
+    /// character to just after its full stop.
+    pub start: usize,
+    pub end: usize,
 }
 
 #[derive(Clone, Debug)]
@@ -224,6 +228,8 @@ impl Rule {
             right: self.left.clone(),
             cond: self.cond.clone(),
             line: self.line,
+            start: self.start,
+            end: self.end,
         }
     }
 }
@@ -530,6 +536,7 @@ impl<'a> P<'a> {
     /// One rule, with `--` replaced by the parts of the rule before.
     fn rule(&mut self, prev: Option<&Rule>) -> R<Rule> {
         self.ws();
+        let start = self.i;
         let (line, _) = self.pos(self.i);
         let left = if self.at("--") && self.peek_at(2) != Some('-') {
             let at = self.i;
@@ -572,6 +579,8 @@ impl<'a> P<'a> {
             right,
             cond,
             line,
+            start,
+            end: self.i,
         })
     }
 

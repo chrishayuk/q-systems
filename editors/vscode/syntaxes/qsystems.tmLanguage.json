@@ -1,0 +1,36 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Q-systems",
+  "scopeName": "source.qsystems",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#phase" },
+    { "include": "#relation" },
+    { "include": "#parameter" },
+    { "include": "#operator" },
+    { "include": "#label" }
+  ],
+  "repository": {
+    "comment": { "name": "comment.block.qsystems", "begin": "\\*\\*", "end": "\\." },
+    "phase": { "name": "keyword.control.qsystems", "match": "-(?:INV|REQ|DET)-" },
+    "relation": {
+      "patterns": [
+        { "name": "keyword.operator.word.qsystems", "match": "-(?:DANS|HORS|ET|OU|NON)-" },
+        { "name": "constant.language.qsystems", "match": "-NUL-" },
+        { "name": "keyword.operator.comparison.qsystems", "match": "≠|#|(?<!=)=(?!=)" }
+      ]
+    },
+    "parameter": { "name": "variable.parameter.qsystems", "match": "(?<![A-Z0-9])[A-FI-NU-Z]\\*[0-9]?" },
+    "operator": {
+      "patterns": [
+        { "name": "keyword.operator.rewrite.qsystems", "match": "==" },
+        { "name": "keyword.operator.ditto.qsystems", "match": "--" },
+        { "name": "keyword.operator.disintegrator.qsystems", "match": "\\$\\$" },
+        { "name": "punctuation.section.condition.qsystems", "match": "\\(\\.|\\.\\)" },
+        { "name": "keyword.operator.condition.qsystems", "match": "/(?=\\s)" },
+        { "name": "punctuation.terminator.rule.qsystems", "match": "\\.(?=\\s*$)" }
+      ]
+    },
+    "label": { "name": "entity.name.tag.label.qsystems", "match": "[A-Z][A-Z0-9]*" }
+  }
+}

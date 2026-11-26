@@ -1,0 +1,10 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Q-system data",
+  "scopeName": "source.qsystems.data",
+  "patterns": [
+    { "name": "constant.numeric.vertex.qsystems", "match": "-[0-9]+-" },
+    { "name": "keyword.operator.separator.qsystems", "match": "^\\s*/\\s*$" },
+    { "name": "entity.name.tag.label.qsystems", "match": "[A-Z][A-Z0-9]*" }
+  ]
+}

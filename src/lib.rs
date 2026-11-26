@@ -5,6 +5,7 @@
 //! ordinateur" (publication interne n° 43, September 1970), cited as C70.
 
 pub mod json;
+pub mod lsp;
 pub mod machine;
 pub mod matching;
 pub mod play;

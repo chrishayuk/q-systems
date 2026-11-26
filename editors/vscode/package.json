@@ -1,0 +1,133 @@
+{
+  "name": "qsystems-language",
+  "displayName": "Q-systems (Montréal, 1969)",
+  "description": "Syntax highlighting, a language server and a run button for Q-systems, Alain Colmerauer's graph-rewriting language for the TAUM machine-translation project (Université de Montréal, 1969-70), reconstructed from his 1970 report: rules that add a path beside every path they match, keep every alternative in one graph, and run backwards under -INV-.",
+  "version": "0.1.0",
+  "publisher": "chrishayuk",
+  "license": "Apache-2.0",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chrishayuk/q-systems"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters"
+  ],
+  "keywords": [
+    "q-systems",
+    "colmerauer",
+    "graph rewriting",
+    "machine translation",
+    "history of computing",
+    "language server"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "languages": [
+      {
+        "id": "qsystems",
+        "aliases": ["Q-systems", "Q-system treatment"],
+        "extensions": [".q"],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "qsystems-data",
+        "aliases": ["Q-system data"],
+        "extensions": [".dat", ".qdat"],
+        "filenamePatterns": [],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "qsystems",
+        "scopeName": "source.qsystems",
+        "path": "./syntaxes/qsystems.tmLanguage.json"
+      },
+      {
+        "language": "qsystems-data",
+        "scopeName": "source.qsystems.data",
+        "path": "./syntaxes/qsystems-data.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "qsystems",
+        "path": "./snippets/qsystems.code-snippets"
+      }
+    ],
+    "commands": [
+      { "command": "qsystems.run", "title": "Run This Treatment on Its Data", "category": "Q-systems", "icon": "$(play)" },
+      { "command": "qsystems.det", "title": "Run This Treatment, Showing Every Application of Every Rule", "category": "Q-systems" },
+      { "command": "qsystems.restartServer", "title": "Restart Language Server", "category": "Q-systems" }
+    ],
+    "menus": {
+      "editor/title/run": [
+        { "command": "qsystems.run", "when": "resourceLangId == qsystems || resourceLangId == qsystems-data" }
+      ],
+      "commandPalette": [
+        { "command": "qsystems.run", "when": "editorLangId == qsystems || editorLangId == qsystems-data" },
+        { "command": "qsystems.det", "when": "editorLangId == qsystems || editorLangId == qsystems-data" },
+        { "command": "qsystems.restartServer", "when": "editorLangId == qsystems || editorLangId == qsystems-data" }
+      ]
+    },
+    "keybindings": [
+      { "command": "qsystems.run", "key": "ctrl+enter", "mac": "cmd+enter", "when": "editorTextFocus && (editorLangId == qsystems || editorLangId == qsystems-data)" }
+    ],
+    "taskDefinitions": [
+      { "type": "qsystems" }
+    ],
+    "configuration": {
+      "title": "Q-systems",
+      "properties": {
+        "qsystems.path": {
+          "type": "string",
+          "default": "",
+          "description": "Path to a qsys program to use as the language server (qsys lsp) and to run treatments with. Leave empty to use the one built into the extension."
+        },
+        "qsystems.width": {
+          "type": "number",
+          "default": 0,
+          "description": "Fold printed lines at this many characters, as the line printer did. 0 does not fold."
+        },
+        "qsystems.trace.server": {
+          "type": "string",
+          "enum": ["off", "messages", "verbose"],
+          "default": "off",
+          "description": "Log the messages exchanged with the language server."
+        }
+      }
+    },
+    "configurationDefaults": {
+      "[qsystems]": {
+        "editor.semanticHighlighting.enabled": true,
+        "editor.wordBasedSuggestions": "off"
+      },
+      "[qsystems-data]": {
+        "editor.semanticHighlighting.enabled": true,
+        "editor.wordBasedSuggestions": "off"
+      }
+    }
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node --test test/*.test.mjs",
+    "test:vscode": "node test/vscode/run.mjs",
+    "package": "node build.mjs && vsce package --no-dependencies"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@vscode/test-electron": "^2.4.1",
+    "@vscode/vsce": "^3.2.1",
+    "esbuild": "^0.24.0",
+    "vscode-oniguruma": "^2.0.1",
+    "vscode-textmate": "^9.1.0"
+  }
+}

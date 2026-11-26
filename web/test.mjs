@@ -29,5 +29,17 @@ if (r.graphs[0].phases[1].printed !== want) fail("paraphrase: phase 2 is not the
 const abc = examples.find((e) => e.name === "abc");
 const cell = qsys(module, ["--data", abc.data, "-"], abc.program).out;
 if (cell !== readFileSync(`${root}examples/abc.out`, "utf8")) fail("abc: the cell printout differs from examples/abc.out");
+// the language server answers in the page as it does in an editor
+import { answer } from "./lsp-worker.js";
+const line = para.program.split("\n").findIndex((l) => l.startsWith("SUJ + PH(U*)"));
+const lsp = answer(module, para.program, [
+  { method: "textDocument/semanticTokens/full" },
+  { method: "textDocument/hover", params: { position: { line, character: 2 } } },
+]);
+if (!lsp.results[0]?.data?.length) fail("lsp: no semantic tokens");
+if (!/Phase 1, rule 4/.test(lsp.results[1]?.contents?.value ?? "")) fail("lsp: hover on a rule of the -INV- phase");
+if (lsp.diagnostics.length) fail("lsp: problems reported in the paraphrase treatment");
+const bad = answer(module, "-1- B -2-\n-0- A -1-\n", [], "file:///text.dat");
+if (bad.diagnostics.length !== 1) fail("lsp: the data's order of paths is not checked");
 console.log(`${examples.length} texts through the wasm build, ${failed ? failed + " failed" : "all agree with the native build"}`);
 process.exit(failed ? 1 : 0);

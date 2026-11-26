@@ -1,0 +1,27 @@
+{
+  "Rule": {
+    "prefix": "rule",
+    "body": ["${1:A*} + ${2:B*} == ${3:C(A*,B*)}."],
+    "description": "a rule: for every path the left member matches, a path carrying the right member is added beside it (C70 section 7)"
+  },
+  "Rule with a condition": {
+    "prefix": "rulec",
+    "body": ["${1:A*} == ${2:N(A*)} / ${3:A*} -DANS- ${4:JEAN,MARIE}."],
+    "description": "a rule that applies only under the substitutions that make its condition true (C70 pp. 25-27)"
+  },
+  "Comment": {
+    "prefix": "**",
+    "body": ["** ${1:WHAT THE RULES BELOW DO}."],
+    "description": "a comment, up to the next full stop (C70 p. 25)"
+  },
+  "Next phase": {
+    "prefix": "-REQ-",
+    "body": ["-REQ- ** ${1:PHASE}.", "$0"],
+    "description": "the next phase of the treatment (C70 p. 34)"
+  },
+  "Inverted phase": {
+    "prefix": "-INV-",
+    "body": ["-INV- ** ${1:PHASE}.", "$0"],
+    "description": "a phase whose rules are applied with their members exchanged (C70 pp. 32-33)"
+  }
+}

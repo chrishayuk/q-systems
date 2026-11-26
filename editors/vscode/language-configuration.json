@@ -1,0 +1,7 @@
+{
+  "comments": { "blockComment": ["**", "."] },
+  "brackets": [["(", ")"]],
+  "autoClosingPairs": [{ "open": "(", "close": ")" }],
+  "surroundingPairs": [["(", ")"]],
+  "wordPattern": "-(?:INV|REQ|DET|DANS|HORS|ET|OU|NON|NUL)-|[A-FI-NU-Z]\\*\\d?|-\\d+-|[^\\s+(),]+"
+}
