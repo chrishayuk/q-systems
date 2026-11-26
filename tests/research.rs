@@ -480,7 +480,7 @@ fn some_strings(g: &Graph, all: usize, n: usize) -> Vec<Vec<Tree>> {
         .collect()
 }
 
-/// QSYS-E10: the grammar of C70 section 11 beyond one embedded clause.
+/// QSYS-E10: the grammar of C70 section 11 beyond one level of embedding.
 /// Clauses embedded in the object, in the subject, and in both, to depth
 /// 5, 5 and 3. Synthesis converges; every sentence (or 500 random walks
 /// through the graph, where there are more than 2,000) analyses back to its
@@ -787,6 +787,16 @@ fn e15_other_computations() {
 
 use qsystems::lm::{self, Lm, Rng, END};
 
+/// Levels of clause embedding in a normalised tree: PH inside PH.
+fn depth(t: &Tree) -> usize {
+    let inner = t.kids.iter().map(depth).max().unwrap_or(0);
+    if &*t.label == "PH" {
+        inner + 1
+    } else {
+        inner
+    }
+}
+
 /// Every normalised clause of C70 p. 35 with at most `depth` levels of
 /// embedding, without the PI.
 fn clauses(depth: usize) -> Vec<String> {
@@ -874,6 +884,7 @@ fn e16_next_token() {
         greedy.len(),
         (9_565_938f64).log2()
     );
+    assert_eq!((big.arrows.len(), m.states_made(), greedy.len()), (2760, 2085, 88));
 
     // 3. Counting paths or strings differs only where two paths spell one
     //    string: A == X. B == X. on four choices of A, B or C.
@@ -993,6 +1004,15 @@ fn e16_next_token() {
             (a, b) = (b, t);
         }
         let ok = grammatical(&s);
+        if ok && !corpus_set.contains(&s) {
+            // Not among the sentences of depth at most 1, so of a deeper tree.
+            let chain: Vec<Tree> = s.iter().map(|w| parse_tree(w).unwrap()).collect();
+            let r = strings_text(&apply(&analysis[0], &Graph::from_chain(&chain), Limits::default()).result);
+            assert!(
+                r[0].contains("PH(V(") && depth(&parse_tree(r[0].trim_end_matches(" + .")).unwrap()) >= 2,
+                "{r:?}"
+            );
+        }
         tri_ok += ok as usize;
         tri_new += (ok && !corpus_set.contains(&s)) as usize;
         graph_ok += grammatical(&lm::generate(&lang_lm, false, &mut rng)) as usize;

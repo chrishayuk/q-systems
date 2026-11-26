@@ -110,7 +110,8 @@ vertex numbers**.
 - **Reversibility holds for the paper's example.** All 18 synthesised
   sentences analyse back to the one tree. (QSYS-E02)
 - **The paper's French grammar is unambiguous, as far as it was tried.**
-  - Every normalised sentence with at most one embedded clause was tried:
+  - Every normalised sentence with at most one level of embedding was
+    tried (a clause may stand in either argument, but not inside another):
     8,112 trees, giving 131,424 distinct sentences.
   - No sentence comes from two trees.
   - Every sentence, analysed by the inverted system, gives back its one
@@ -175,8 +176,8 @@ vertex numbers**.
     and no bound on depth.
   - Every sample is grammatical, and every deeper sentence gets a
     probability.
-  - Merging equal derivations saves nothing, because the grammar is
-    unambiguous. (E17, not historical)
+  - Merging equal derivations saved nothing: no two derivations of a
+    prefix ever left the same work. (E17, not historical)
 - **Arithmetic, binary increment, reversal and rule 110 can all be
   written.**
   - Anything repeated becomes a left-to-right scan with an accumulator,

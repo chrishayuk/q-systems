@@ -51,11 +51,12 @@ of one data file.
 
 The grammar of p. 35 is recursive, so it allows infinitely many sentences
 ("un ensemble restreint mais cependant infini"). Every normalised sentence
-with at most one embedded clause was synthesised:
+with at most one level of embedding was synthesised:
 
 - there are 3 verbs and 4 names;
 - each argument of the main clause is a name or a clause whose arguments are
-  names;
+  names, so a sentence may have two embedded clauses, one in each argument,
+  but none inside another;
 - that makes 8,112 trees;
 - they give 131,424 distinct sentences.
 
@@ -245,10 +246,10 @@ Reversal under `-INV-` is exact only for systems that keep everything they
 read. C70's claim for its own grammar holds (E02, E03), but it is a property
 of that grammar, not of `-INV-`.
 
-## QSYS-E10. The grammar of section 11 beyond one embedded clause
+## QSYS-E10. The grammar of section 11 beyond one level of embedding
 
-E03 tried every sentence with at most one embedded clause. With two there
-are about 198 million trees, too many to try, so E10 follows three shapes of
+E03 tried every sentence with at most one level of embedding. With two
+levels there are about 198 million trees, too many to try, so E10 follows three shapes of
 embedding as deep as they go cheaply:
 
 - clauses in the object, `X constate que Y détruit … que …`;
@@ -541,9 +542,11 @@ are E16's graph built as the prefix asks: a working state, not a catalogue.
   samples are deeper than anything E16's graph of the language holds.
 - **Merging equal derivations does nothing here.** With and without it,
   the 88-word sentence is read with at most 2,160 live derivations and gets
-  the same probability. The grammar is unambiguous, so no two derivations
-  of a prefix leave the same work to do. Merging is a saving only where
-  there is something equal to merge (E11), and this grammar has nothing.
+  the same probability. No two derivations of a prefix ever left the same
+  work to do. No ambiguity was found at depth at most 1 (E03) or in the
+  largest graph (E16), though that is not a proof the grammar has none.
+  Merging is a saving only where there is something equal to merge (E11),
+  and here there was nothing.
 - **It is not learned.** The grammar was read off the report's rules by
   hand and checked against the machine. Learning such rules from sentences
   is the next question, not something shown here.
