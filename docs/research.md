@@ -312,7 +312,11 @@ the same tree. E11 asks what happens if it does.
   4,096 and the 132 from one record per application, 46 and 56 of them.
   This is a shared derivation forest, like the packed parse forests of
   later chart parsers.
-- **On these systems merging changes no set of strings.** On every C70
+  - What is kept is the count, and which applications made each arrow. The
+    order the copies would have been made in, their separate arrows and
+    vertices, and C70's full list of applications are not kept.
+- **On these systems merging changes no set of strings.** This is
+  about the systems tried, not every Q-system that converges. On every C70
   example it prints exactly what C70 prints, because those examples never
   make two equal arrows (E08).
 - **Merging is not harmless in general.**
