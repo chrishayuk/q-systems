@@ -1,0 +1,5 @@
+target
+.DS_Store
+# copies of papers are not kept: see sources/README.md
+sources/downloads/
+node_modules

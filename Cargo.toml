@@ -1,0 +1,19 @@
+[package]
+name = "qsystems"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "A reconstruction of Alain Colmerauer's Q-systems (Montréal, 1969-70): rules that rewrite a graph of strings of trees, keeping every alternative at once, and that run backwards when inverted"
+
+[lib]
+name = "qsystems"
+path = "src/lib.rs"
+
+[[bin]]
+name = "qsys"
+path = "src/main.rs"
+
+[dependencies]
+
+[profile.dev]
+opt-level = 2

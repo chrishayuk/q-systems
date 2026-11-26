@@ -1,0 +1,4 @@
+** C70 PAGE 30, WITH ONE CONDITION ADDED THAT THE PAPER DOES NOT HAVE:
+** THE LABELS [ AND ] ARE NOT TAKEN APART AGAIN.
+A*(U*) == [(A*) + ](U*) / U* ≠ -NUL- -ET- A* -HORS- [,].
+](I*,U*) == I* + ](U*).
