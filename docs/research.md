@@ -243,3 +243,164 @@ then run again under `-INV-` on the result:
 Reversal under `-INV-` is exact only for systems that keep everything they
 read. C70's claim for its own grammar holds (E02, E03), but it is a property
 of that grammar, not of `-INV-`.
+
+## QSYS-E10. The grammar of section 11 beyond one embedded clause
+
+E03 tried every sentence with at most one embedded clause. With two there
+are about 198 million trees, too many to try, so E10 follows three shapes of
+embedding as deep as they go cheaply:
+
+- clauses in the object, `X constate que Y détruit … que …`;
+- clauses in the subject;
+- clauses in both, a full binary tree of clauses.
+
+Each tree was synthesised, and its sentences were analysed back. Where a
+tree has more than 2,000 sentences, 500 random walks through the graph were
+analysed instead.
+
+| shape | depth | synthesis applications | arrows kept | sentences | analysed back to the one tree |
+|---|---:|---:|---:|---:|---|
+| object | 0 | 12 | 9 | 2 | all |
+| object | 2 | 156 | 131 | 18 | all |
+| object | 5 | 4,368 | 3,719 | 486 | all |
+| subject | 5 | 4,368 | 4,042 | 486 | all |
+| both | 2 | 516 | 456 | 1,458 | all |
+| both | 3 | 3,108 | 2,760 | 9,565,938 | 500 sampled |
+
+- **Synthesis grows with the tree, not with the sentences.** Each clause
+  multiplies the sentences by three in a chain (2·3ᵈ). With clauses on both
+  sides it multiplies them far faster. At depth 3, seven clauses give
+  9,565,938 sentences in 2,760 arrows, made in 3,108 applications. This is
+  E08's fanning out, at work in C70's own grammar.
+- **Analysis grows with the sentence.** The longest analysis took 196
+  applications.
+- **No sentence tried was ambiguous.** Every one analysed to exactly its
+  tree. This is still a sample beyond depth 1, not a proof.
+
+## QSYS-E11 and E12. Merging equal arrows (an experimental extension, not historical)
+
+E08 found that the machine never merges two arrows with the same ends and
+the same tree. E11 asks what happens if it does.
+
+- `src/experimental.rs` is a second machine. With C70's settings it gives
+  the historical machine's graphs and application counts on every example,
+  and a test checks this.
+- `Merge::Intern` reuses an equal arrow, or an equal path the phase has
+  already made, instead of adding a new one.
+- `Merge::Keep` (E12) does the same, but records every application that
+  would have made each arrow. The number of derivations, which is what C70
+  would have made copies of, can then still be counted.
+
+| system | machine | applications | arrows kept | distinct strings | derivations of the kept arrows |
+|---|---|---:|---:|---:|---:|
+| parity, 12 choices | C70 | 8,190 | 4,096 | 2 | 4,096 |
+| | merged | 46 | 2 | 2 | 2 |
+| | merged, history kept | 46 | 2 | 2 | 4,096 |
+| packing, 12 choices | all three | 8,190 | 4,096 | 4,096 | 4,096 |
+| `R(A*,B*) + R(B*,C*) == R(A*,C*).` on 7 facts in a row | C70 | 294 | 132 | 1 | 132 |
+| | merged | 56 | 1 | 1 | 1 |
+| | merged, history kept | 56 | 1 | 1 | 132 |
+
+- **Merging removes the cost of fanning in.**
+  - Parity becomes linear: 46 applications instead of 8,190.
+  - Packing does not change, because its results really are all different.
+  - Composing a relation along seven facts gives one fact `R(A,H)`. C70's
+    machine makes it 132 times, once for each way of bracketing the chain
+    (the Catalan number C₆).
+- **The history can be kept without the copies.** `Merge::Keep` counts the
+  4,096 and the 132 from one record per application, 46 and 56 of them.
+  This is a shared derivation forest, like the packed parse forests of
+  later chart parsers.
+- **On these systems merging changes no set of strings.** On every C70
+  example it prints exactly what C70 prints, because those examples never
+  make two equal arrows (E08).
+- **Merging is not harmless in general.**
+  - Under C70, `A == A.` never converges (E09).
+  - Merged, its one application makes nothing new: it finds the data's own
+    arrow, and the second phase removes that arrow as rewritten. The graph
+    ends empty.
+  - So merging changes the meaning of a system whose rule gives back an
+    arrow equal to one it read.
+  - Apart from rules like this one, the differences seen were all in
+    counts: how many copies of a string the graph holds, and how many
+    applications `-DET-` would list.
+
+## QSYS-E13. Purifying by strings instead of arrows (an experimental extension, not historical)
+
+E09 found that C70's second phase removes strings no rule touched, because
+it removes arrows. `Purify::Paths` instead keeps every string from the entry
+to the exit that does not run through a path some rule was applied to.
+
+To keep one string and drop another that shares an arrow with it, the graph
+must be unshared. A vertex of the result is a vertex of the old graph
+together with the last arrows crossed to reach it.
+
+| data | C70 | by strings |
+|---|---|---|
+| `A + B == C.` on 10 choices | 2 strings in 11 arrows | 1,024 strings in 69 arrows |
+| C70 p. 29, `A A A B B B C C C` | 1 string, `S(1,1,1)` | 8 strings |
+| C70 pp. 30-31, the cul-de-sac | nothing | `/CUL + /DESAC` and `/CULDE + /SAC` |
+| C70 p. 38, the analysis | 1 string, the tree | 72 strings |
+
+- **On the choices it loses nothing.** Every string comes through, with each
+  `A + B` rewritten as `C`, so there are again 2ⁿ. The cost is the unsharing:
+  69 arrows where C70 keeps 11.
+- **On C70's own systems it breaks them.**
+  - The analysis keeps 72 strings: the tree, and every partial analysis
+    that no rule took further.
+  - The cul-de-sac recipe stops working. It relies on removing every arrow
+    of the dead-end paths it builds.
+
+So the loss of E09 is not a defect C70 overlooked. The second phase is what
+makes an analysis return only complete analyses, and C70 uses it on purpose
+in the cul-de-sac. Losing the bystanders is the price of that.
+
+## QSYS-E14. Phases in sequence
+
+- **Phases do not commute.** On `A + B`, the rules `A == B.` and
+  `A + B == D.` give:
+  - `D` in one phase;
+  - `B + B` as two phases in that order, because the first phase rewrites
+    `A` away before the second can use it;
+  - `D` as two phases in the other order.
+
+  Within a phase the order of the rules does not matter (E06), but the
+  division into phases does.
+- **A pair of phases can keep the strings and lose the sharing.** C70's
+  phases 3 and 4 give back exactly the 18 strings of phase 2. But phase 2
+  holds them in 139 arrows, and phase 4 in 282. Packing each sentence into
+  one tree and unpacking it is the identity on strings, and it undoes the
+  compression of E04.
+
+## QSYS-E15. Other computations in the language as it is
+
+These are written in C70's language and run by the historical machine.
+Their programs are in `research/e15-*.q`.
+
+| computation | how | rules |
+|---|---|---:|
+| unary addition, equality | lists: `N(U*) + PLUS + N(V*) == N(U*,V*).`; a repeated parameter tests equality | 1 each |
+| unary multiplication | an accumulator, adding the first number once for each `I` of the second | 2 |
+| adding one in binary | the carry is a word `Z` moving right | 4 |
+| reversing a list | an accumulator | 1 |
+| one step of the cellular automaton rule 110 | a window of three cells moved left to right, into an accumulator | 9 |
+| composing a relation | facts side by side in a string | 1 |
+
+- **Lists and trees make data easy.** Addition, equality and concatenation
+  are single rules, because list parameters match any list.
+- **Repetition is done by scanning.** A computation whose steps depend on
+  each other is written as a left-to-right scan with an accumulator.
+  - A rule reads its whole left member and replaces it. It cannot read a
+    neighbour as context and leave it.
+  - So the overlapping windows of a cellular automaton cannot all be
+    rewritten at once into a new row.
+- **Facts are joined only when they are next to each other.**
+  - `R(B,C) + R(A,B)` is never composed, because the facts are in the wrong
+    order.
+  - A rule that lets facts change places joins them, but it never
+    converges.
+  - Two facts held as alternatives, on parallel arrows, are never joined
+    either: no path runs through both. This is E08's limit again: a rule
+    sees one path, never two alternatives.
+- **Derivations are counted, not results.** `R(A,B) + R(B,C) + R(C,D)`
+  gives `R(A,D)` twice, once for each bracketing.

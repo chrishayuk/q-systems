@@ -418,3 +418,350 @@ fn e09_what_the_second_phase_loses() {
     );
     assert!(!o.converged);
 }
+
+const NAMES: [&str; 4] = ["BEAUCEVILLE", "BENOIT", "GAETANE", "RICHARD"];
+
+/// A normalised clause of C70 p. 35 with `d` levels of embedding: in the
+/// object, in the subject, or in both. Verbs and names are taken in turn.
+fn clause(shape: &str, d: usize, k: &mut usize) -> String {
+    let v = ["DETRUIT", "ETONNE", "CONSTATE"][*k % 3];
+    let mut name = || {
+        *k += 1;
+        format!("SN({})", NAMES[*k % 4])
+    };
+    if d == 0 {
+        let (a, b) = (name(), name());
+        return format!("V({v}),{a},{b}");
+    }
+    match shape {
+        "object" => {
+            let a = name();
+            format!("V({v}),{a},PH({})", clause(shape, d - 1, k))
+        }
+        "subject" => {
+            let b = name();
+            format!("V({v}),PH({}),{b}", clause(shape, d - 1, k))
+        }
+        _ => {
+            let a = clause(shape, d - 1, k);
+            let b = clause(shape, d - 1, k);
+            format!("V({v}),PH({a}),PH({b})")
+        }
+    }
+}
+
+/// The sentences of a graph if there are no more than `all`, otherwise
+/// `walks` random walks from the entry (with a fixed seed).
+fn some_strings(g: &Graph, all: usize, n: usize) -> Vec<Vec<Tree>> {
+    if g.count_strings() <= all as u128 {
+        return g.strings(usize::MAX);
+    }
+    let outs = g.out_lists();
+    let mut seed = 12345u64;
+    (0..n)
+        .map(|_| {
+            let (mut v, mut words) = (g.entry, Vec::new());
+            while v != g.exit {
+                seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+                let a = &g.arrows[outs[v][(seed >> 33) as usize % outs[v].len()]];
+                words.push(a.tree.clone());
+                v = a.to;
+            }
+            words
+        })
+        .collect()
+}
+
+/// QSYS-E10: the grammar of C70 section 11 beyond one embedded clause.
+/// Clauses embedded in the object, in the subject, and in both, to depth
+/// 5, 5 and 3. Synthesis converges; every sentence (or 500 random walks
+/// through the graph, where there are more than 2,000) analyses back to its
+/// one tree.
+#[test]
+fn e10_deeper_sentences() {
+    let sys = paraphrase();
+    let mut rows = Vec::new();
+    for (shape, deepest) in [("object", 5), ("subject", 5), ("both", 3)] {
+        for d in 0..=deepest {
+            let tree = parse_tree(&format!("PI({})", clause(shape, d, &mut 0))).unwrap();
+            let g = Graph::from_chain(&[tree.clone(), Tree::leaf(".")]);
+            let o = apply(&sys[1], &g, Limits::default());
+            assert!(o.converged);
+            let want = vec![format!("{tree} + .")];
+            let tried = some_strings(&o.result, 2000, 500);
+            let mut analysis_apps = 0;
+            for s in &tried {
+                let a = apply(&sys[0], &Graph::from_chain(s), Limits::default());
+                assert_eq!(strings_text(&a.result), want, "{shape} {d}");
+                analysis_apps = analysis_apps.max(a.applications.len());
+            }
+            println!(
+                "{shape:7} depth {d}: {} applications, {} arrows kept, {} sentences; {} analysed back to the one tree (the longest analysis {analysis_apps} applications)",
+                o.applications.len(),
+                o.result.arrows.len(),
+                o.result.count_strings(),
+                tried.len()
+            );
+            rows.push((o.applications.len(), o.result.arrows.len(), o.result.count_strings()));
+        }
+    }
+    assert_eq!(
+        rows,
+        [
+            (12, 9, 2),
+            (48, 39, 6),
+            (156, 131, 18),
+            (480, 407, 54),
+            (1452, 1235, 162),
+            (4368, 3719, 486),
+            (12, 9, 2),
+            (48, 42, 6),
+            (156, 142, 18),
+            (480, 442, 54),
+            (1452, 1342, 162),
+            (4368, 4042, 486),
+            (12, 9, 2),
+            (84, 72, 18),
+            (516, 456, 1458),
+            (3108, 2760, 9_565_938),
+        ]
+    );
+}
+
+use qsystems::experimental::{self as variant, Merge, Purify, Variant};
+
+const INTERN: Variant = Variant {
+    merge: Merge::Intern,
+    purify: Purify::Arrows,
+};
+const KEEP: Variant = Variant {
+    merge: Merge::Keep,
+    purify: Purify::Arrows,
+};
+const PATHS: Variant = Variant {
+    merge: Merge::None,
+    purify: Purify::Paths,
+};
+
+/// The variant machine set to C70 gives the historical machine's graphs on
+/// every example and every phase.
+#[test]
+fn variant_c70_is_the_historical_machine() {
+    for e in ["abc", "mot", "culdesac", "paraphrase", "abc-inverse", "unstructure"] {
+        let p = std::fs::read_to_string(format!("examples/{e}.q")).unwrap();
+        let d = std::fs::read_to_string(format!("examples/{e}.dat")).unwrap();
+        let (sys, runs) = qsystems::report::run_all(&p, &d, Limits::default()).unwrap();
+        for r in &runs {
+            let mut g = r.input.clone();
+            for (s, h) in sys.iter().zip(&r.phases) {
+                let o = variant::apply(s, &g, Limits::default(), variant::C70);
+                assert_eq!(graph_text(&o.result, 0), graph_text(&h.result, 0), "{e}");
+                assert_eq!(o.applications.len(), h.applications.len(), "{e}");
+                g = o.result;
+            }
+        }
+    }
+}
+
+/// QSYS-E11 and E12 (experimental extensions, not historical): equal arrows
+/// merged, with and without the record of what made them.
+#[test]
+fn e11_e12_merging_equal_arrows() {
+    let closure = "R(A*,B*) + R(B*,C*) == R(A*,C*).\n";
+    let facts: Vec<Tree> = "R(A,B) R(B,C) R(C,D) R(D,E) R(E,F) R(F,G) R(G,H)"
+        .split(' ')
+        .map(|s| parse_tree(s).unwrap())
+        .collect();
+    let pack = "S + A == P(A).\nS + B == P(B).\nP(U*) + A == P(U*,A).\nP(U*) + B == P(U*,B).\n";
+    let cases: Vec<(&str, &str, Graph)> = vec![
+        ("parity", PARITY, choices(12, true)),
+        ("pack", pack, choices(12, true)),
+        ("closure", closure, Graph::from_chain(&facts)),
+        ("pair", "A + B == C.\n", choices(10, false)),
+    ];
+    let mut rows = Vec::new();
+    for (name, src, g) in &cases {
+        let s = &systems(src).unwrap()[0];
+        for (vn, v) in [
+            ("C70", variant::C70),
+            ("merged", INTERN),
+            ("merged, history kept", KEEP),
+        ] {
+            let o = variant::apply(s, g, Limits::default(), v);
+            let derivations: u128 = o.kept.iter().map(|&a| variant::derivations(&o, a)).sum();
+            println!(
+                "{name:8} {vn:22}: {} applications, {} arrows made, {} kept, {} strings, {} distinct; derivations of the kept arrows {derivations}",
+                o.applications.len(),
+                o.grown.arrows.len() - g.arrows.len(),
+                o.result.arrows.len(),
+                o.result.count_strings(),
+                distinct(&o.result),
+            );
+            assert!(o.converged);
+            rows.push((
+                o.applications.len(),
+                o.result.arrows.len(),
+                distinct(&o.result),
+                derivations,
+            ));
+        }
+        // Merging never changes which strings there are, here.
+        let a = variant::apply(s, g, Limits::default(), variant::C70);
+        let b = variant::apply(s, g, Limits::default(), INTERN);
+        assert_eq!(
+            strings_text(&a.result).into_iter().collect::<BTreeSet<_>>(),
+            strings_text(&b.result).into_iter().collect::<BTreeSet<_>>()
+        );
+    }
+    assert_eq!(
+        rows,
+        [
+            (8190, 4096, 2, 4096),
+            (46, 2, 2, 2),
+            (46, 2, 2, 4096),
+            (8190, 4096, 4096, 4096),
+            (8190, 4096, 4096, 4096),
+            (8190, 4096, 4096, 4096),
+            (294, 132, 1, 132),
+            (56, 1, 1, 1),
+            (56, 1, 1, 132),
+            (9, 11, 2, 11),
+            (9, 11, 2, 11),
+            (9, 11, 2, 11),
+        ]
+    );
+    // C70's examples never make two equal arrows, so merging prints the same.
+    for e in ["abc", "mot", "culdesac", "paraphrase"] {
+        let p = std::fs::read_to_string(format!("examples/{e}.q")).unwrap();
+        let d = std::fs::read_to_string(format!("examples/{e}.dat")).unwrap();
+        let (sys, runs) = qsystems::report::run_all(&p, &d, Limits::default()).unwrap();
+        for r in &runs {
+            let (mut g, mut h) = (r.input.clone(), r.input.clone());
+            for s in &sys {
+                let a = variant::apply(s, &g, Limits::default(), variant::C70);
+                let b = variant::apply(s, &h, Limits::default(), INTERN);
+                assert_eq!(graph_text(&a.result, 0), graph_text(&b.result, 0), "{e}");
+                (g, h) = (a.result, b.result);
+            }
+        }
+    }
+    // But merging is not harmless: A == A. does not converge in C70, and
+    // merged it makes nothing new, rewrites its own data and empties the graph.
+    let s = &systems("A == A.\n").unwrap()[0];
+    let g = Graph::from_chain(&[Tree::leaf("A")]);
+    assert!(!variant::apply(s, &g, Limits { max_arrows: 100 }, variant::C70).converged);
+    let o = variant::apply(s, &g, Limits::default(), INTERN);
+    assert!(o.converged && o.result.is_empty());
+}
+
+/// QSYS-E13 (an experimental extension, not historical): purifying by
+/// strings instead of arrows.
+#[test]
+fn e13_purifying_by_paths() {
+    let set = |g: &Graph| strings_text(g).into_iter().collect::<BTreeSet<_>>();
+    // On the choices, every string survives, rewritten where it can be.
+    let s = &systems("A + B == C.\n").unwrap()[0];
+    let mut rows = Vec::new();
+    for n in [2, 4, 10] {
+        let g = choices(n, false);
+        let o = variant::apply(s, &g, Limits::default(), PATHS);
+        let kept = set(&o.result);
+        assert!(set(&g)
+            .iter()
+            .filter(|s| !s.contains("A + B"))
+            .all(|s| kept.contains(s)));
+        println!(
+            "A + B == C on {n} choices, by paths: {} strings in {} arrows (C70: 2 strings in {} arrows)",
+            kept.len(),
+            o.result.arrows.len(),
+            n + 1
+        );
+        rows.push((kept.len(), o.result.arrows.len()));
+    }
+    assert_eq!(rows, [(4, 6), (16, 21), (1024, 69)]);
+    // On C70's own examples it keeps what the second phase was for.
+    let mut got = Vec::new();
+    for e in ["abc", "culdesac", "paraphrase"] {
+        let p = std::fs::read_to_string(format!("examples/{e}.q")).unwrap();
+        let d = std::fs::read_to_string(format!("examples/{e}.dat")).unwrap();
+        let (sys, runs) = qsystems::report::run_all(&p, &d, Limits::default()).unwrap();
+        let c70 = &runs[0].phases[0].result;
+        let o = variant::apply(&sys[0], &runs[0].input, Limits::default(), PATHS);
+        println!(
+            "{e}, first phase: C70 keeps {} strings, by paths {}",
+            c70.count_strings(),
+            o.result.count_strings()
+        );
+        got.push((c70.count_strings(), o.result.count_strings()));
+        if e == "culdesac" {
+            assert_eq!(
+                set(&o.result),
+                BTreeSet::from(["/CUL + /DESAC".to_string(), "/CULDE + /SAC".to_string()])
+            );
+        }
+    }
+    assert_eq!(got, [(1, 8), (0, 2), (1, 72)]);
+}
+
+/// QSYS-E14: phases in sequence.
+#[test]
+fn e14_phases_in_sequence() {
+    let one = |src: &str| {
+        let (_, runs) = qsystems::report::run_all(src, "-0- A + B -1-", Limits::default()).unwrap();
+        strings_text(runs[0].result())
+    };
+    // The same two rules: in one phase, then in two orders.
+    assert_eq!(one("A == B.\nA + B == D.\n"), ["D"]);
+    assert_eq!(one("A == B.\n-REQ- A + B == D.\n"), ["B + B"]);
+    assert_eq!(one("A + B == D.\n-REQ- A == B.\n"), ["D"]);
+    // C70's phases 3 and 4 give back the strings of phase 2, but unshared.
+    let sys = paraphrase();
+    let src = "RICHARD + CONSTATE + QUE + LA + DESTRUCTION + DE + BEAUCEVILLE + PAR + BENOIT + ETONNE + GAETANE + .";
+    let r = run(&sys, &Graph::from_chain(&words(src)), Limits::default());
+    let (p2, p4) = (&r.phases[1].result, &r.phases[3].result);
+    assert_eq!(
+        strings_text(p2).into_iter().collect::<BTreeSet<_>>(),
+        strings_text(p4).into_iter().collect::<BTreeSet<_>>()
+    );
+    assert_eq!((p2.arrows.len(), p4.arrows.len()), (139, 282));
+}
+
+/// QSYS-E15: small computations written in the language as it is.
+#[test]
+fn e15_other_computations() {
+    let results = |e: &str| -> Vec<String> {
+        let p = std::fs::read_to_string(format!("research/e15-{e}.q")).unwrap();
+        let d = std::fs::read_to_string(format!("research/e15-{e}.dat")).unwrap();
+        let (_, runs) = qsystems::report::run_all(&p, &d, Limits::default()).unwrap();
+        runs.iter()
+            .map(|r| {
+                if r.phases[0].converged {
+                    strings_text(r.result()).join(" | ")
+                } else {
+                    "does not converge".into()
+                }
+            })
+            .collect()
+    };
+    assert_eq!(
+        results("arithmetic"),
+        ["N(I,I,I,I,I)", "VRAI", "N(I,I) + EGAL + N(I)", "N(I,I,I,I,I,I)"]
+    );
+    assert_eq!(results("binary"), ["B(1,1,0,0)", "B(1,0,0,0)"]);
+    assert_eq!(results("reverse"), ["REV + ACC(4,3,2,1)"]);
+    assert_eq!(results("rule110"), ["ROW(0,1,1,0)", "ROW(1,1,1,1,1)"]);
+    // Two derivations of R(A,D), never merged; facts out of order, or side
+    // by side as alternatives, are never joined.
+    assert_eq!(
+        results("relations"),
+        ["R(A,D) | R(A,D)", "R(B,C) + R(A,B)", "R(B,C) | R(A,B)"]
+    );
+    // Letting the facts change places would join them, but it never stops.
+    let (_, runs) = qsystems::report::run_all(
+        "R(I*,J*) + R(K*,L*) == R(K*,L*) + R(I*,J*).\n",
+        "-0- R(B,C) + R(A,B) -1-",
+        Limits { max_arrows: 5000 },
+    )
+    .unwrap();
+    assert!(!runs[0].phases[0].converged);
+}

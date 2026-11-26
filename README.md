@@ -146,6 +146,27 @@ vertex numbers**.
   - `-INV-` gives back exactly only what a one-to-one system made. A
     two-to-one system gives back all 64 candidates. The inverse of parity
     never stops. (E09)
+- **Deeper sentences.** Seven embedded clauses give 9,565,938 sentences in
+  2,760 arrows, and every sentence tried analyses back to its one tree.
+  (E10)
+- **Merging equal arrows** is an experimental extension, kept apart from the
+  historical machine in `src/experimental.rs`.
+  - It makes parity linear: 46 applications instead of 8,190.
+  - It turns 132 copies of one composed fact into one.
+  - A record of what made each arrow can still count the derivations.
+  - But it changes the meaning of `A == A.`, from never stopping to an empty
+    graph. (E11, E12)
+- **The second phase's loss is the point of it.** Purifying by strings
+  instead of arrows keeps all 2ⁿ strings on the choices. On C70's own
+  systems it keeps 72 partial analyses instead of the one tree, and it
+  breaks the cul-de-sac recipe. (E13)
+- **Phases don't commute**, and packing then unpacking keeps the 18
+  sentences but doubles the arrows, 139 to 282. (E14)
+- **Arithmetic, binary increment, reversal and rule 110 can all be
+  written.**
+  - Anything repeated becomes a left-to-right scan with an accumulator,
+    since a rule cannot read context without consuming it.
+  - Facts are joined only when they are next to each other. (E15)
 
 The experiments, with their numbers, are in
 [`docs/research.md`](docs/research.md).
@@ -262,6 +283,7 @@ Other notation:
 | `src/syntax.rs` | reading treatments and graphs (C70 appendix) |
 | `src/matching.rs` | parameters, substitution, conditions |
 | `src/machine.rs` | graphs of strings and the two phases |
+| `src/experimental.rs` | **not historical**: the machine with equal arrows merged, or purified by strings (E11-E13) |
 | `src/print.rs` | the `-01- … -02-` printout |
 | `examples/` | every example of C70, with its `.out` |
 | `research/` | the inputs of the experiments |

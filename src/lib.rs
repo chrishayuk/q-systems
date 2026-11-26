@@ -4,6 +4,7 @@
 //! systèmes-Q ou un formalisme pour analyser et synthétiser des phrases sur
 //! ordinateur" (publication interne n° 43, September 1970), cited as C70.
 
+pub mod experimental;
 pub mod json;
 pub mod lsp;
 pub mod machine;

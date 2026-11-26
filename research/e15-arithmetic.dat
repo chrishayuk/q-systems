@@ -1,0 +1,7 @@
+-0- N(I,I) + PLUS + N(I,I,I) -1-
+/
+-0- N(I,I) + EGAL + N(I,I) -1-
+/
+-0- N(I,I) + EGAL + N(I) -1-
+/
+-0- N(I,I) + FOIS + N(I,I,I) + ACC -1-
