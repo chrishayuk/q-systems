@@ -325,7 +325,7 @@ fn e08_work_on_shared_alternatives() {
     }
     // None of C70's own examples ever makes two equal arrows, so its printed
     // results cannot say whether the lost program merged them.
-    for e in ["abc", "mot", "structure", "paraphrase"] {
+    for e in ["abc", "abc-inverse", "mot", "structure", "unstructure", "culdesac", "paraphrase"] {
         let p = std::fs::read_to_string(format!("examples/{e}.q")).unwrap();
         let d = std::fs::read_to_string(format!("examples/{e}.dat")).unwrap();
         let (_, runs) = qsystems::report::run_all(&p, &d, Limits { max_arrows: 2000 }).unwrap();
@@ -764,4 +764,15 @@ fn e15_other_computations() {
     )
     .unwrap();
     assert!(!runs[0].phases[0].converged);
+    // With the composing rule beside it, R(A,C) is made, though the phase
+    // still never stops.
+    let (_, runs) = qsystems::report::run_all(
+        "R(I*,J*) + R(K*,L*) == R(K*,L*) + R(I*,J*).\nR(A*,B*) + R(B*,C*) == R(A*,C*).\n",
+        "-0- R(B,C) + R(A,B) -1-",
+        Limits { max_arrows: 5000 },
+    )
+    .unwrap();
+    let o = &runs[0].phases[0];
+    assert!(!o.converged);
+    assert!(o.grown.arrows.iter().any(|a| a.tree.to_string() == "R(A,C)"));
 }

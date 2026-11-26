@@ -184,7 +184,8 @@ out.
     the number of distinct results. The graph shares what is the same
     *before* a rule. It cannot share what becomes the same *after* one.
 - **C70's own examples never meet the question.** None of them ever makes
-  two equal arrows (the test checks every phase of every example). So the
+  two equal arrows (the test checks every phase of every example; the
+  rules of p. 30, which never stop, up to 2,000 arrows). So the
   printed results cannot say whether the lost program merged them. The text
   does not suggest it did.
 - `A + B == C.` keeps only 2 of the 2⁴⁰ strings. That is a loss, not a
@@ -321,9 +322,13 @@ the same tree. E11 asks what happens if it does.
     ends empty.
   - So merging changes the meaning of a system whose rule gives back an
     arrow equal to one it read.
-  - Apart from rules like this one, the differences seen were all in
-    counts: how many copies of a string the graph holds, and how many
-    applications `-DET-` would list.
+  - Others like it were found: `A + B == A + B.`, `A == B. B == A.`,
+    `A == X. X == A.`. Each gives back an arrow equal to one it read, never
+    stops under C70, and leaves an empty graph merged. So in every change
+    found, C70's result was undefined (p. 22) to begin with.
+  - Apart from these, the differences seen were all in counts: how many
+    copies of a string the graph holds, and how many applications `-DET-`
+    would list.
 
 ## QSYS-E13. Purifying by strings instead of arrows (an experimental extension, not historical)
 
@@ -348,12 +353,16 @@ together with the last arrows crossed to reach it.
 - **On C70's own systems it breaks them.**
   - The analysis keeps 72 strings: the tree, and every partial analysis
     that no rule took further.
-  - The cul-de-sac recipe stops working. It relies on removing every arrow
-    of the dead-end paths it builds.
+  - The cul-de-sac recipe no longer empties the graph. The string it
+    deletes goes, but the dead ends it builds survive. It relies on
+    removing every arrow of them.
 
-So the loss of E09 is not a defect C70 overlooked. The second phase is what
-makes an analysis return only complete analyses, and C70 uses it on purpose
-in the cul-de-sac. Losing the bystanders is the price of that.
+So whether or not Colmerauer saw the loss of E09, his systems depend on
+what causes it. Removing arrows is what makes an analysis return only
+complete analyses, and the cul-de-sac is built on it. A second phase that
+kept the bystanders would not do either. Nothing in C70 says the loss of
+bystanders was known or wanted. Its cul-de-sac is offered for deleting
+"tout chemin portant une chaîne donnée", and it deletes more (E07).
 
 ## QSYS-E14. Phases in sequence
 
