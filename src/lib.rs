@@ -4,8 +4,10 @@
 //! systèmes-Q ou un formalisme pour analyser et synthétiser des phrases sur
 //! ordinateur" (publication interne n° 43, September 1970), cited as C70.
 
+pub mod json;
 pub mod machine;
 pub mod matching;
+pub mod play;
 pub mod print;
 pub mod report;
 pub mod syntax;

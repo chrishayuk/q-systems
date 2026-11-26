@@ -83,7 +83,7 @@ The treatment of section 11, on the sentence of p. 38:
 
 ## QSYS-E05. Two readings at once (an experiment, not historical)
 
-The grammar is of our own, in `tests/research.rs`. It lets `AVEC LE
+The grammar is of our own, in `research/e05-two-readings.q`. It lets `AVEC LE
 TELESCOPE` attach to the verb or to the noun. Analysed, `JEAN VOIT L HOMME
 AVEC LE TELESCOPE .` gives one graph with both readings, as two arrows
 between the same two vertices:

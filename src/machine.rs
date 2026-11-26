@@ -158,6 +158,42 @@ impl Graph {
         out
     }
 
+    /// How many strings the graph carries, saturating at `u128::MAX`.
+    /// Iterative, in topological order: a graph may be deep.
+    pub fn count_strings(&self) -> u128 {
+        if self.is_empty() {
+            return 0;
+        }
+        let out = self.out_lists();
+        let mut indeg = vec![0usize; self.nverts];
+        for a in &self.arrows {
+            indeg[a.to] += 1;
+        }
+        let mut order = Vec::new();
+        let mut stack: Vec<usize> = (0..self.nverts).filter(|&v| indeg[v] == 0).collect();
+        while let Some(v) = stack.pop() {
+            order.push(v);
+            for &a in &out[v] {
+                let w = self.arrows[a].to;
+                indeg[w] -= 1;
+                if indeg[w] == 0 {
+                    stack.push(w);
+                }
+            }
+        }
+        let mut n = vec![0u128; self.nverts];
+        n[self.exit] = 1;
+        for &v in order.iter().rev() {
+            if v == self.exit {
+                continue;
+            }
+            n[v] = out[v]
+                .iter()
+                .fold(0u128, |s, &a| s.saturating_add(n[self.arrows[a].to]));
+        }
+        n[self.entry]
+    }
+
     pub fn is_empty(&self) -> bool {
         self.arrows.is_empty()
     }

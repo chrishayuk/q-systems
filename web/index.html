@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Q-systems, Montréal 1969: rules that rewrite a graph of every alternative</title>
+<meta name="description" content="A reconstruction of Alain Colmerauer's Q-systems (Université de Montréal, 1969-70), running in the page: watch each rule add its path beside the one it matched, then the second phase remove every rewritten arrow.">
+<style>
+  :root { --paper: #f2efe8; --ink: #1c1a17; --mute: #7d7465; --rule: #d9d2c3; --accent: #a8822e; --card: #faf8f3;
+          --good: #2f7a3d; --bad: #a33a2f; --wait: #b07a12; --mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace; }
+  @media (prefers-color-scheme: dark) {
+    :root { --paper: #14120f; --ink: #eee6d6; --mute: #9c917e; --rule: #3a352c; --accent: #d1a64a; --card: #1d1a16;
+            --good: #79c48a; --bad: #e0877b; --wait: #e0b34f; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.5 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; }
+  header, main, footer { max-width: 1400px; margin: 0 auto; padding: 0 16px; }
+  header { padding-top: 26px; }
+  .kicker { font: 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+  h1 { font-size: clamp(26px, 4vw, 38px); margin: 8px 0 6px; font-weight: 600; }
+  .dek, .about, footer { color: var(--mute); max-width: 86ch; }
+  .about { font-size: 15px; margin-top: 28px; }
+  .about h2 { font: 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; font-weight: 500; color: var(--ink); }
+  code { font: 13px var(--mono); }
+  footer { font-size: 13px; padding: 24px 16px 40px; }
+  a { color: var(--accent); }
+
+</style>
+<link rel="stylesheet" href="playground.css">
+</head>
+<body>
+<header>
+  <div class="kicker">Université de Montréal · 1969-70 · Alain Colmerauer</div>
+  <h1>Q-systems: a graph of every alternative, rewritten</h1>
+  <p class="dek">A Q-system does not rewrite a string: it rewrites a <em>graph of strings</em>, arrows carrying trees between
+    an entry and an exit, every path one string. A rule <code>a1 + … + ap == b1 + … + bq.</code> never replaces anything:
+    for every path its left side matches, it <em>adds</em> a path beside it, and goes on until no rule applies to a path it has
+    not been applied to. Only then are the rewritten arrows removed. Under <code>-INV-</code> the same rules run backwards.
+    Step through a phase, or edit it: <code>qsys</code>, compiled to WebAssembly, runs in this page.</p>
+</header>
+<main>
+  <div id="playground"><p>Loading…</p></div>
+  <section class="about">
+    <h2>What is reconstructed, and from what</h2>
+    <p>The machine follows Colmerauer's report, <i>Les systèmes-Q ou un formalisme pour analyser et synthétiser des phrases sur
+      ordinateur</i> (publication interne n° 43, Université de Montréal, September 1970), which gives the whole grammar, the meaning
+      of every construct, and the printed results of its examples. Every rule, the page it rests on, and every place a decision was
+      made, is in <a href="https://github.com/chrishayuk/q-systems/blob/main/docs/decisions.md">docs/decisions.md</a>.</p>
+    <p>Every computation the report gives a result for comes out as it says: the AAABBBCCC system arrow by arrow through its first
+      phase, and its inverse; <code>$$</code>; structured strings; the cul-de-sac; and the paraphrase treatment, whose analysis gives
+      the tree of p. 38 and whose synthesis gives the graph of pp. 38-40 line for line, vertex numbers and all. The eighteen
+      sentences of pp. 40-41 come out in the reverse of the report's order.</p>
+    <p>What reconstructing it found is in <a href="https://github.com/chrishayuk/q-systems/blob/main/docs/research.md">docs/research.md</a>:
+      the tree-to-string rules of p. 30 do not converge as printed (open <code>structure</code>); removing one string removes every
+      string that shares an arrow with it (<code>e07-shared-arrows</code>); and an ambiguous sentence comes out of one analysis with
+      both its readings, as two arrows between the same two vertices (<code>e05-two-readings</code>).</p>
+  </section>
+</main>
+<footer>A reconstruction from Colmerauer's published description: no program text of the Q-systems is known to us.
+  Source: <a href="https://github.com/chrishayuk/q-systems">q-systems</a>.</footer>
+
+<script type="module">
+import { mountPlayground } from "./playground.js";
+const params = new URL(location.href).searchParams;
+const host = document.getElementById("playground");
+const examples = await (await fetch(new URL("examples.json", import.meta.url))).json();
+host.replaceChildren();
+mountPlayground(host, { examples, initial: params.get("example") || "abc" });
+host.addEventListener("qs-example", (e) => {
+  const url = new URL(location.href);
+  url.searchParams.set("example", e.detail);
+  history.replaceState(null, "", url);
+});
+</script>
+</body>
+</html>

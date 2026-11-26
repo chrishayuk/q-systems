@@ -130,7 +130,42 @@ qsys examples/abc.q examples/abc.dat          # the data graph, then the graph a
 qsys --det examples/abc.q examples/abc.dat    # every rule application, as -DET- does for a phase
 qsys --width 72 PROGRAM DATA                  # fold lines as the line printer did
 qsys check examples/paraphrase.q              # the rules as applied: -- filled in, -INV- done
+qsys json PROGRAM DATA                        # every arrow of every phase, for the playground
 cargo test                                    # the acceptance tests, the examples, the experiments
+```
+
+## The playground
+
+`web/` runs `qsys`, compiled to WebAssembly, in the page. Serve the folder and
+open `index.html`:
+
+```bash
+node web/build.mjs                         # web/qsys.wasm and web/examples.json
+python3 -m http.server -d web 8000         # then http://localhost:8000/?example=abc
+```
+
+The page has:
+
+- an editor for the treatment and one for its data;
+- a tab for each phase;
+- a slider that steps through the phase.
+
+The graph is drawn as C70 draws it on p. 29: the data on a line, and each
+path a rule adds as a bracket above or below. Each step of the slider is one
+application of one rule:
+
+- the path it matched is in blue;
+- the path it added is in gold;
+- the last two steps are the second phase, first what it removes (rewritten
+  arrows struck through, stranded ones faded), then what is left.
+
+`mountPlayground(host, {initial})` mounts it in another page.
+`mountRunner(host, {example, args})` mounts a single notebook cell that runs
+one treatment and shows the printout.
+
+```bash
+node web/test.mjs            # every text through the wasm build, against the native one
+node web/browser-test.mjs    # the page in headless Chrome
 ```
 
 ## A system
@@ -181,6 +216,8 @@ Other notation:
 | `examples/` | every example of C70, with its `.out` |
 | `research/` | the inputs of the experiments |
 | `tests/c70/` | C70's printed results, transcribed from the scan |
+| `src/play.rs` | the run as JSON, for the playground (`qsys json`) |
+| `web/` | the playground |
 
 ## Licence
 
