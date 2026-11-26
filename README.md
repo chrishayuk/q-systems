@@ -70,7 +70,7 @@ vertex numbers**.
   [`docs/decisions.md`](docs/decisions.md). Most are sources. The decisions
   are about reading text and the order of printing.
 - **Every computation C70 gives a result for comes out as it says**, with
-  one exception (below). There are 21 acceptance tests, each naming its page
+  two exceptions (below). There are 21 acceptance tests, each naming its page
   ([`tests/historical.rs`](tests/historical.rs)). They cover:
   - labels;
   - the ways of writing a tree;
@@ -81,16 +81,20 @@ vertex numbers**.
   - structured strings;
   - the cul-de-sac;
   - the four phases of the paraphrase treatment.
-- **The exception is the order of the last printout.** The 18 sentences of
-  pp. 40-41 come out in exactly the reverse of the paper's order. No one
-  rule for ordering fits both pp. 38-40 and pp. 40-41 (decision 20).
+- **The two exceptions.**
+  - **p. 30: the tree-to-string rules do not stop.** The report says they
+    "produiraient" a structured string; as printed they rewrite their own
+    output without end (QSYS-E01).
+  - **pp. 40-41: the order of the last printout.** The 18 sentences come out
+    in exactly the reverse of the paper's order. No one rule for ordering
+    fits both pp. 38-40 and pp. 40-41 (decision 20).
 - **Tools.** The same machine runs in four places:
   - `qsys` on the command line;
   - a playground in the browser that steps through every rule application;
   - a language server;
   - a VS Code extension ([`editors/`](editors)).
-- **Not seen.** The TAUM grammars of *TAUM 71*, the only large Q-system
-  programs, and any later version of the formalism.
+- **Not seen.** The TAUM grammars, the earliest large Q-system programs;
+  METEO, written later in Q-systems; and any later version of the formalism.
 - **Not yet checked.** Nothing has been checked by a person against the
   sources. No literature search has been made, so nothing here is claimed as
   new.
@@ -105,8 +109,14 @@ vertex numbers**.
   - The inverse rules work as printed. (QSYS-E01)
 - **Reversibility holds for the paper's example.** All 18 synthesised
   sentences analyse back to the one tree. (QSYS-E02)
-- **The paper's French grammar is unambiguous.** 8,112 normalised trees give
-  131,424 distinct sentences, and no sentence comes from two trees. (E03)
+- **The paper's French grammar is unambiguous, as far as it was tried.**
+  - Every normalised sentence with at most one embedded clause was tried:
+    8,112 trees, giving 131,424 distinct sentences.
+  - No sentence comes from two trees.
+  - Every sentence, analysed by the inverted system, gives back its one
+    tree.
+  - The report's own example has two embedded clauses, so it is not among
+    them; its 18 paraphrases analyse back too (E02). (E03)
 - **The graph shares.**
   - Analysis builds 38 arrows of partial groupings and keeps 1.
   - Synthesis writes 18 sentences in 139 arrows, where written out

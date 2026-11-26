@@ -39,13 +39,18 @@ fn words(s: &str) -> Vec<Tree> {
     s.split(" + ").map(|w| parse_tree(w).unwrap()).collect()
 }
 
-/// QSYS-E03: sentences of the grammar that two normalised trees synthesise.
+/// QSYS-E03: every normalised sentence of C70 p. 35 with at most one
+/// embedded clause, synthesised; no sentence comes from two trees, and every
+/// sentence, analysed by the inverted system, gives back its one tree. Run
+/// with `cargo test --release --test research -- --ignored e03`.
 #[test]
+#[ignore = "about a minute in release: cargo test --release --test research -- --ignored"]
 fn e03_ambiguity() {
     let sys = paraphrase();
-    let synth = &sys[1..];
+    let (analysis, synth) = (&sys[..1], &sys[1..2]);
     let mut from: BTreeMap<String, Vec<String>> = BTreeMap::new();
     let all = sentences(1);
+    assert_eq!(all.len(), 8112);
     for s in &all {
         let g = Graph::from_chain(&[parse_tree(s).unwrap(), Tree::leaf(".")]);
         let r = run(synth, &g, Limits::default());
@@ -53,16 +58,18 @@ fn e03_ambiguity() {
             from.entry(st).or_default().push(s.clone());
         }
     }
-    let amb: Vec<_> = from.iter().filter(|(_, v)| v.len() > 1).collect();
-    println!("{} trees, {} sentences, {} ambiguous", all.len(), from.len(), amb.len());
-    for (s, v) in amb.iter().take(3) {
-        println!("{s}\n  <- {}", v.join("\n  <- "));
+    let amb = from.values().filter(|v| v.len() > 1).count();
+    println!("{} trees, {} sentences, {} ambiguous", all.len(), from.len(), amb);
+    assert_eq!(from.len(), 131_424);
+    assert_eq!(amb, 0);
+    let mut back = 0;
+    for (sentence, trees) in &from {
+        let r = run(analysis, &Graph::from_chain(&words(sentence)), Limits::default());
+        let got = strings_text(r.result());
+        assert_eq!(got, vec![format!("{} + .", trees[0])], "{sentence}");
+        back += 1;
     }
-    if let Some((s, v)) = amb.first() {
-        let r = run(&sys[..1], &Graph::from_chain(&words(s)), Limits::default());
-        println!("analysis:\n{}", graph_text(r.result(), 0));
-        assert_eq!(strings_text(r.result()).len(), v.len());
-    }
+    println!("{back} sentences analysed, each to its one tree");
 }
 
 /// QSYS-E04: how much the first phase grows the graph, and how much the
@@ -72,8 +79,18 @@ fn e04_growth_and_pruning() {
     let sys = paraphrase();
     let src = "RICHARD + CONSTATE + QUE + LA + DESTRUCTION + DE + BEAUCEVILLE + PAR + BENOIT + ETONNE + GAETANE + .";
     let mut g = Graph::from_chain(&words(src));
+    let mut rows = Vec::new();
     for (i, s) in sys.iter().enumerate() {
         let o = apply(s, &g, Limits::default());
+        rows.push((
+            g.arrows.len(),
+            o.applications.len(),
+            o.grown.arrows.len(),
+            o.rewritten.len(),
+            o.stranded.len(),
+            o.result.arrows.len(),
+            strings_text(&o.result).len(),
+        ));
         println!(
             "phase {}: {} arrows in, {} applications, {} arrows after the first phase, {} removed as rewritten, {} stranded, {} left carrying {} strings",
             i + 1,
@@ -89,6 +106,16 @@ fn e04_growth_and_pruning() {
     }
     let total_words: usize = strings_text(&g).iter().map(|s| s.split(" + ").count()).sum();
     println!("18 sentences as separate strings: {total_words} arrows");
+    assert_eq!(
+        rows,
+        [
+            (12, 25, 50, 35, 13, 2, 1),
+            (2, 156, 330, 191, 0, 139, 18),
+            (139, 224, 363, 345, 0, 18, 18),
+            (18, 264, 546, 264, 0, 282, 18)
+        ]
+    );
+    assert_eq!(total_words, 282);
 }
 
 /// QSYS-E05 (an experiment, not historical): an ambiguous grammar of our
@@ -155,6 +182,7 @@ fn e06_order_independence() {
         }
     }
     println!("{tried} orders of the rules, one printout");
+    assert_eq!(tried, 32);
 }
 
 /// QSYS-E07: the cul-de-sac rules of C70 pp. 30-31 remove "tout chemin

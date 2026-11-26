@@ -66,9 +66,9 @@ removed anyway:
 - that left it on no path from the entry to the exit;
 - so it was *stranded*.
 
-## The example of C70 section 8
+## A system of C70 section 8
 
-Colmerauer's first example (p. 27) accepts `A…A B…B C…C` with as many of each.
+The example of C70 section 8 (p. 27) accepts `A…A B…B C…C` with as many of each.
 It uses parameters, which chapter 4 explains:
 
 - `A* + A*(U*) == A*(1,U*)` counts runs of one letter, so `A + A` becomes

@@ -170,8 +170,9 @@ graphs.
 20. *Decision.* **The paths leaving a vertex are printed in the order of
     their trees, compared character by character in display code.**
     - C70 does not say how the program ordered them.
-    - At all six branching vertices of the synthesis graph (pp. 38-40) the
-      paths are in ascending order, and this order reproduces the page.
+    - At all fourteen vertices of the synthesis graph (pp. 38-40) that have
+      more than one path leaving them, the paths are in ascending order, and
+      this order reproduces the page.
     - But the eighteen sentences of the last phase (pp. 40-41) are printed
       in exactly the **descending** order, the reverse of what is printed
       here.

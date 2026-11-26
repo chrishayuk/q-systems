@@ -1,6 +1,6 @@
 # What reconstructing the Q-systems found
 
-Each experiment has a test that checks its numbers:
+Each experiment has a test that asserts its numbers:
 
 - `tests/historical.rs` for E01 and E02;
 - `tests/research.rs` for the rest.
@@ -47,18 +47,30 @@ the single normalised tree of p. 38:
 `research/e02-round-trip.q` and `.dat` run the eighteen as eighteen graphs
 of one data file.
 
-## QSYS-E03. The grammar of section 11 is not ambiguous
+## QSYS-E03. The grammar of section 11 is not ambiguous, as far as it was tried
 
-Every normalised sentence of p. 35 was synthesised, up to one level of
-embedded `PH`:
+The grammar of p. 35 is recursive, so it allows infinitely many sentences
+("un ensemble restreint mais cependant infini"). Every normalised sentence
+with at most one embedded clause was synthesised:
 
-- there are 3 verbs, 4 names, and arguments that are names or sentences;
+- there are 3 verbs and 4 names;
+- each argument of the main clause is a name or a clause whose arguments are
+  names;
 - that makes 8,112 trees;
 - they give 131,424 distinct sentences.
 
-No sentence comes from two trees. So the analysis of any of them leaves one
-tree. The many groupings C70's introduction speaks of exist only during the
-first phase, as partial analyses that the second phase throws away (E04).
+No sentence comes from two trees. Every one of the 131,424, analysed by the
+inverted system, gives back its one tree. This takes about a minute in
+release:
+
+```sh
+cargo test --release --test research -- --ignored e03
+```
+
+The report's own example has two embedded clauses, so it is not among them.
+Its 18 paraphrases analyse back too (E02). The many groupings C70's
+introduction speaks of exist only during the first phase, as partial
+analyses that the second phase throws away (E04).
 
 ## QSYS-E04. How much each phase grows and prunes the graph
 
@@ -105,7 +117,8 @@ C70 p. 22 says that if the first phase converges, its result "est
 indépendant de l'ordre dans lequel on a appliqué les règles".
 
 - The rules of all four phases of section 11 were put in every rotation,
-  forwards and backwards, which is 32 orders.
+  forwards and backwards, which is 32 orders. Phases 3 and 4 have one rule
+  each, so the orders differ only in phases 1 and 2.
 - Every order gave the same four printed graphs.
 - This holds because the machine applies every rule to every path,
   whatever the order. It is a property of the definition, not luck.
