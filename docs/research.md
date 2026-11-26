@@ -145,3 +145,101 @@ holds for every rule, not only these three:
   it;
 - that is harmless only when every such string was also rewritten, which is
   the usual case in analysis.
+
+## QSYS-E08. Working on many strings at once costs what the rules look at, not what they find
+
+*An experiment, not historical.* The data are `n` independent choices
+between `A` and `B`. That is n + 1 vertices and 2n arrows carrying 2ⁿ
+strings, so forty choices hold 1,099,511,627,776 strings in 80 arrows. The
+question is whether a phase can work on all of them without writing them
+out.
+
+| system | n | applications | arrows kept | strings after |
+|---|---:|---:|---:|---:|
+| `A == X. B == Y.` (each arrow on its own) | 40 | 80 | 80 | 2⁴⁰ |
+| `A == X. A == Y.` on one string of n `A` (fanning out) | 40 | 80 | 80 | 2⁴⁰ |
+| `A + B == C.` (pairs) | 40 | 39 | 41 | 2 |
+| parity of the number of `A`, carried left to right from `S` | 12 | 8,190 | 4,096 | 4,096, only 2 different |
+| the whole string packed into one tree `P(…)`, left to right | 12 | 8,190 | 4,096 | 4,096, all different |
+
+- **Local rules work on the shared graph as it stands.** A rule whose left
+  side spans a bounded stretch applies once per path of that length. On
+  these graphs that is a number in proportion to n, however many strings the
+  graph carries. Forty choices take 80 applications.
+- **So does fanning out.** One string with two rewritings of every word
+  gives 2ⁿ strings in 2n arrows. This is the sharing C70 speaks of, and the
+  sharing of the synthesis in E04 (139 arrows for 282).
+- **Fanning in does not.** A result carried along the string, like the
+  parity of the `A`s, is made once for every prefix: 2ⁿ⁺¹ − 2 applications.
+  This is exactly what packing the whole string costs, though parity has
+  only two possible results and packing has 2ⁿ. At n = 12, 8,166 of the
+  8,190 arrows that parity makes repeat an arrow already made, with the same
+  ends and the same tree.
+- **This follows from the definition.**
+  - C70 p. 22 says each application adds "le tout nouveau chemin", so equal
+    arrows are never merged.
+  - No rule can merge them either. A left member matches one path, and two
+    parallel arrows lie on different paths, so no rule ever sees both.
+  - The machine's cost is therefore the number of distinct derivations, not
+    the number of distinct results. The graph shares what is the same
+    *before* a rule. It cannot share what becomes the same *after* one.
+- **C70's own examples never meet the question.** None of them ever makes
+  two equal arrows (the test checks every phase of every example). So the
+  printed results cannot say whether the lost program merged them. The text
+  does not suggest it did.
+- `A + B == C.` keeps only 2 of the 2⁴⁰ strings. That is a loss, not a
+  saving, and E09 looks at it.
+
+## QSYS-E09. What the second phase loses
+
+*An experiment, not historical.* E07 showed that removing one string takes
+its neighbours with it. This experiment measures the effect, finds what
+avoids it, and asks which phases can be undone.
+
+**A rule removes strings it never matched.** `A + B == C.` was applied to
+`n` choices of `A` or `B`:
+
+| n | strings | strings with no `A + B` | strings after | of those with no `A + B`, kept |
+|---:|---:|---:|---:|---:|
+| 2 | 4 | 3 | 2 | 1 |
+| 3 | 8 | 4 | 2 | 0 |
+| 4 | 16 | 5 | 2 | 0 |
+| 10 | 1,024 | 11 | 2 | 0 |
+
+From n = 3 on, nothing the rule did not apply to is left. `A + A + A` has no
+`A + B`, but its first arrow is also the first arrow of `A + B + A`, so it
+goes. Every arrow but the first `B` and the last `A` is on some path the rule
+was applied to. The two strings left are made of `C`s, with that `B` and that
+`A` at the ends.
+
+**Copying every arrow keeps them.** With `A == X.` and `B == Y.` added, every
+original string comes back, relabelled, beside every string with `C` in it:
+5, 12, 29, 169, 985 and 5,741 strings for the n above. These are the Pell
+numbers, since each step is `X`, `Y`, or a `C` covering two. The copy must go
+to a new label. `A == A.` never converges, because the arrow it makes is a
+new path it applies to.
+
+So a phase keeps every string, in some form, when every label a rule reads
+also has a rule of its own that copies it to a new label.
+
+**Which phases undo.** Each system was run on all 64 strings of six choices,
+then run again under `-INV-` on the result:
+
+| system | strings that come back exactly | what the inverse gives |
+|---|---:|---|
+| `A == X. B == Y.` | 64 of 64 | the one string |
+| `A == X. B == X.` | 0 | all 64 strings, for every input |
+| parity (E08) | 0 | nothing: it never converges |
+
+- **A one-to-one system undoes exactly**, as the grammar of C70 section 11
+  does on the strings tried (E02, E03).
+- **A two-to-one system undoes to every string with the same image.** The
+  inverse is not wrong, since every one of the 64 does give `X + … + X`. But
+  it keeps nothing of which string was there.
+- **A system that forgets as it goes has an inverse that does not stop.**
+  Inverted, `E + B == E.` is `E == E + B.`, which applies to its own result
+  without end.
+
+Reversal under `-INV-` is exact only for systems that keep everything they
+read. C70's claim for its own grammar holds (E02, E03), but it is a property
+of that grammar, not of `-INV-`.

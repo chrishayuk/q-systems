@@ -131,6 +131,21 @@ vertex numbers**.
     string sharing an arrow with it.
   - So `LE + FAIT + QUE + BENOIT` goes with `LE + FAIT + QUE + LE + FAIT +
     QUE`. (E07)
+- **The graph shares what fans out, never what fans in.**
+  - A rule that looks at a bounded stretch works on 2⁴⁰ strings in 80
+    applications.
+  - A result carried along the string costs one application per prefix:
+    2ⁿ⁺¹ − 2 for parity, the same as packing every string whole, though
+    parity has two results.
+  - Equal arrows are never merged, and no rule can merge them, since a rule
+    sees one path at a time. (E08)
+- **The second phase loses strings no rule touched.**
+  - On ten choices, `A + B == C.` leaves 2 strings. None of the 11 strings
+    it never matched survives.
+  - Copying every label to a new one keeps them all.
+  - `-INV-` gives back exactly only what a one-to-one system made. A
+    two-to-one system gives back all 64 candidates. The inverse of parity
+    never stops. (E09)
 
 The experiments, with their numbers, are in
 [`docs/research.md`](docs/research.md).
