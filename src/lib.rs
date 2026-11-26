@@ -6,6 +6,7 @@
 
 pub mod experimental;
 pub mod json;
+pub mod lm;
 pub mod lsp;
 pub mod machine;
 pub mod matching;

@@ -417,3 +417,69 @@ Their programs are in `research/e15-*.q`.
     sees one path, never two alternatives.
 - **Derivations are counted, not results.** `R(A,B) + R(B,C) + R(C,D)`
   gives `R(A,D)` twice, once for each bracketing.
+
+## QSYS-E16. A graph of strings as a language model (an experiment, not historical)
+
+A graph left by a phase holds every string it allows. Read as a language
+model, it gives the probability of a next token after a prefix: the share of
+complete paths that spell the prefix and go on with that token,
+
+  P(t | p) = N(p t) / N(p).
+
+`src/lm.rs` counts these by dynamic programming over the graph:
+- the number of paths from each vertex to the exit;
+- the vertices a prefix can reach, with how many paths reach each.
+
+No string is listed. The graphs are made by the historical machine, and
+nothing in `src/lm.rs` changes how. It also counts by distinct strings
+instead of paths, by making the graph deterministic as far as asked.
+
+**Exact.** On the 1,458 paraphrases of a tree with two levels of embedding,
+the counts at every one of the 13,510 prefixes equal those got by listing
+the sentences.
+
+**Large.** The 9,565,938 paraphrases of E10 are 2,760 arrows.
+- Counted by paths and by distinct sentences, the totals are equal, 9,565,938
+  both. So no paraphrase is spelled by two paths, and the two ways of
+  counting agree on this grammar.
+- Made deterministic, the graph has 2,085 states.
+- The distribution is uniform over the sentences, so its entropy is
+  log₂ 9,565,938 = 23.19 bits.
+- Greedy decoding gives one of the paraphrases, 88 words long. In the
+  exploratory run, a whole sentence was decoded in about 30 µs, and 100
+  samples took about 1 ms. These times were not asserted.
+- Twenty samples were analysed back by the inverted system, and each gave
+  the tree.
+
+**Paths and strings differ when two paths spell one string.** `A == X.
+B == X.` on four choices of `A`, `B` or `C` leaves 81 paths but 16 strings.
+- Counted by paths, the first token is `X` 54 times and `C` 27.
+- Counted by strings, it is 8 and 8.
+
+E11 is the same distinction: C70's machine counts derivations.
+
+**Against a trigram model.** The whole language of depth at most 1 was put
+into one graph: the 8,112 trees as parallel arrows, then synthesis.
+- That gives 131,424 sentences, 2,021,088 words, in 536,641 arrows.
+- A trigram model was trained on all 131,424 sentences.
+- Both were tested on 300 sentences of trees with two levels of embedding,
+  and on 300 samples from each. The report's own analysis was the judge:
+  a sentence is grammatical if it analyses to one tree.
+
+| | trigram | the graph of depth ≤ 1 |
+|---|---:|---:|
+| deeper sentences given a probability above zero | 16 of 300 | 0 of 300 |
+| samples that are grammatical | 91 of 300 | 300 of 300 |
+| grammatical samples not among the training sentences | 29 | 0 |
+
+- **The graph is exact but closed.** It generates only grammatical
+  sentences, and only those of the trees it was built from. It is a model
+  of P(sentence | tree), a decoder given the meaning, not of the language.
+- **The grammar itself is not closed.** Its analysis recognises every
+  deeper sentence; the graph made from a given set of trees is what is
+  finite.
+- **The trigram generalises and overgenerates.**
+  - 29 of its samples are grammatical sentences it never saw, of deeper
+    trees.
+  - 209 of its 300 are not French by the grammar.
+  - It gives zero probability to 284 of the 300 deeper sentences.

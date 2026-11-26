@@ -162,6 +162,13 @@ vertex numbers**.
   breaks the cul-de-sac recipe. (E13)
 - **Phases don't commute**, and packing then unpacking keeps the 18
   sentences but doubles the arrows, 139 to 282. (E14)
+- **A graph of strings is a language model.** Next-token counts by
+  dynamic programming match listing every sentence at all 13,510 prefixes.
+  - The 9,565,938 paraphrases decode in microseconds without being listed.
+  - Every sample of the grammar's graph is grammatical; 91 of 300 trigram
+    samples are.
+  - But the graph is finite: it is a model of the sentences of given trees,
+    and gives zero to every deeper sentence. (E16, not historical)
 - **Arithmetic, binary increment, reversal and rule 110 can all be
   written.**
   - Anything repeated becomes a left-to-right scan with an accumulator,
@@ -283,6 +290,7 @@ Other notation:
 | `src/syntax.rs` | reading treatments and graphs (C70 appendix) |
 | `src/matching.rs` | parameters, substitution, conditions |
 | `src/machine.rs` | graphs of strings and the two phases |
+| `src/lm.rs` | **not historical**: a graph of strings read as a language model (E16) |
 | `src/experimental.rs` | **not historical**: the machine with equal arrows merged, or purified by strings (E11-E13) |
 | `src/print.rs` | the `-01- … -02-` printout |
 | `examples/` | every example of C70, with its `.out` |

@@ -325,7 +325,15 @@ fn e08_work_on_shared_alternatives() {
     }
     // None of C70's own examples ever makes two equal arrows, so its printed
     // results cannot say whether the lost program merged them.
-    for e in ["abc", "abc-inverse", "mot", "structure", "unstructure", "culdesac", "paraphrase"] {
+    for e in [
+        "abc",
+        "abc-inverse",
+        "mot",
+        "structure",
+        "unstructure",
+        "culdesac",
+        "paraphrase",
+    ] {
         let p = std::fs::read_to_string(format!("examples/{e}.q")).unwrap();
         let d = std::fs::read_to_string(format!("examples/{e}.dat")).unwrap();
         let (_, runs) = qsystems::report::run_all(&p, &d, Limits { max_arrows: 2000 }).unwrap();
@@ -775,4 +783,226 @@ fn e15_other_computations() {
     let o = &runs[0].phases[0];
     assert!(!o.converged);
     assert!(o.grown.arrows.iter().any(|a| a.tree.to_string() == "R(A,C)"));
+}
+
+use qsystems::lm::{self, Lm, Rng, END};
+
+/// Every normalised clause of C70 p. 35 with at most `depth` levels of
+/// embedding, without the PI.
+fn clauses(depth: usize) -> Vec<String> {
+    let mut args: Vec<String> = NAMES.iter().map(|n| format!("SN({n})")).collect();
+    if depth > 0 {
+        args.extend(clauses(depth - 1).into_iter().map(|i| format!("PH({i})")));
+    }
+    let mut out = Vec::new();
+    for v in ["DETRUIT", "ETONNE", "CONSTATE"] {
+        for a in &args {
+            for b in &args {
+                out.push(format!("V({v}),{a},{b}"));
+            }
+        }
+    }
+    out
+}
+
+fn synthesis(tree: &str) -> Graph {
+    let g = Graph::from_chain(&[parse_tree(tree).unwrap(), Tree::leaf(".")]);
+    apply(&paraphrase()[1], &g, Limits::default()).result
+}
+
+fn tokens(g: &Graph) -> Vec<Vec<String>> {
+    g.strings(usize::MAX)
+        .iter()
+        .map(|s| s.iter().map(|t| t.to_string()).collect())
+        .collect()
+}
+
+/// QSYS-E16 (an experiment, not historical): a graph left by the historical
+/// machine, read as a language model. Next-token counts by dynamic
+/// programming over the graph (src/lm.rs), checked against listing every
+/// string; then the report's grammar as a generator, against a trigram
+/// model trained on its sentences.
+#[test]
+fn e16_next_token() {
+    // 1. Exact: every prefix of the 1,458 sentences of a depth-2 tree.
+    let g = synthesis(&format!("PI({})", clause("both", 2, &mut 0)));
+    let m = Lm::new(&g);
+    let all = tokens(&g);
+    let mut prefixes: BTreeSet<Vec<String>> = BTreeSet::new();
+    for s in &all {
+        for i in 0..=s.len() {
+            prefixes.insert(s[..i].to_vec());
+        }
+    }
+    for p in &prefixes {
+        let mut want: BTreeMap<String, u128> = BTreeMap::new();
+        for s in all.iter().filter(|s| s.starts_with(p)) {
+            *want.entry(s.get(p.len()).cloned().unwrap_or(END.into())).or_default() += 1;
+        }
+        let st = m.after(&p.iter().map(|s| s.as_str()).collect::<Vec<_>>());
+        assert_eq!(m.next_by_paths(&st), want, "{p:?}");
+    }
+    println!(
+        "{} sentences: every one of {} prefixes gives the counts of listing them",
+        all.len(),
+        prefixes.len()
+    );
+    assert_eq!((all.len(), prefixes.len()), (1458, 13510));
+
+    // 2. The 9,565,938 paraphrases, never listed.
+    let big = synthesis(&format!("PI({})", clause("both", 3, &mut 0)));
+    let mut m = Lm::new(&big);
+    let start = m.start();
+    let by_strings: u128 = m.next_by_strings(&start).values().sum();
+    assert_eq!((m.paths(&start), by_strings), (9_565_938, 9_565_938));
+    let mut rng = Rng(1);
+    let analysis = &paraphrase()[..1];
+    let tree = format!("PI({}) + .", clause("both", 3, &mut 0));
+    let greedy = lm::generate(&m, true, &mut rng);
+    for _ in 0..20 {
+        let s = lm::generate(&m, false, &mut rng);
+        let chain: Vec<Tree> = s.iter().map(|w| parse_tree(w).unwrap()).collect();
+        assert_eq!(
+            strings_text(run(analysis, &Graph::from_chain(&chain), Limits::default()).result()),
+            vec![tree.clone()]
+        );
+    }
+    println!(
+        "9,565,938 sentences in {} arrows: {} deterministic states; greedy gives a sentence of {} words; 20 samples analyse back to the tree; entropy {:.2} bits",
+        big.arrows.len(),
+        m.states_made(),
+        greedy.len(),
+        (9_565_938f64).log2()
+    );
+
+    // 3. Counting paths or strings differs only where two paths spell one
+    //    string: A == X. B == X. on four choices of A, B or C.
+    let mut arrows = Vec::new();
+    for i in 0..4 {
+        for l in ["A", "B", "C"] {
+            arrows.push(Arrow {
+                from: i,
+                to: i + 1,
+                tree: Tree::leaf(l),
+            });
+        }
+    }
+    let g = Graph {
+        arrows,
+        nverts: 5,
+        entry: 0,
+        exit: 4,
+    };
+    let o = apply(&systems("A == X.\nB == X.\n").unwrap()[0], &g, Limits::default());
+    let mut m = Lm::new(&o.result);
+    let s = m.start();
+    let p = m.next_by_paths(&s);
+    let q = m.next_by_strings(&s);
+    println!("two to one: first token by paths {p:?}, by strings {q:?}");
+    assert_eq!((p["X"], p["C"], q["X"], q["C"]), (54, 27, 8, 8));
+
+    // 4. The whole language of depth at most 1 as one graph, and a trigram
+    //    model trained on all of its sentences.
+    let d1 = clauses(1);
+    let mut arrows: Vec<Arrow> = d1
+        .iter()
+        .map(|t| Arrow {
+            from: 0,
+            to: 1,
+            tree: parse_tree(&format!("PI({t})")).unwrap(),
+        })
+        .collect();
+    arrows.push(Arrow {
+        from: 1,
+        to: 2,
+        tree: Tree::leaf("."),
+    });
+    let lang = apply(
+        &paraphrase()[1],
+        &Graph {
+            arrows,
+            nverts: 3,
+            entry: 0,
+            exit: 2,
+        },
+        Limits { max_arrows: 10_000_000 },
+    )
+    .result;
+    let corpus = tokens(&lang);
+    let words: usize = corpus.iter().map(|s| s.len()).sum();
+    assert_eq!((corpus.len(), words, lang.arrows.len()), (131_424, 2_021_088, 536_641));
+    let pad = |s: &[String]| -> Vec<String> {
+        let mut v = vec!["<S>".to_string(), "<S>".to_string()];
+        v.extend(s.iter().cloned());
+        v.push(END.into());
+        v
+    };
+    let mut tri: BTreeMap<(String, String), BTreeMap<String, u128>> = BTreeMap::new();
+    for s in &corpus {
+        let v = pad(s);
+        for i in 2..v.len() {
+            *tri.entry((v[i - 2].clone(), v[i - 1].clone()))
+                .or_default()
+                .entry(v[i].clone())
+                .or_default() += 1;
+        }
+    }
+    let grammatical = |s: &[String]| -> bool {
+        let chain: Vec<Tree> = s.iter().map(|w| parse_tree(w).unwrap()).collect();
+        let o = apply(&analysis[0], &Graph::from_chain(&chain), Limits { max_arrows: 100_000 });
+        let r = strings_text(&o.result);
+        o.converged && r.len() == 1 && r[0].starts_with("PI(") && r[0].ends_with(" + .")
+    };
+    // Sentences of trees with two levels of embedding: a clause that itself
+    // embeds one, as subject or object.
+    let deep: Vec<&String> = d1.iter().filter(|c| c.contains("PH(")).collect();
+    let lang_lm = Lm::new(&lang);
+    let (mut tri_nonzero, mut graph_nonzero, n) = (0, 0, 300);
+    let mut rng = Rng(7);
+    for _ in 0..n {
+        let v = ["DETRUIT", "ETONNE", "CONSTATE"][(rng.draw() % 3) as usize];
+        let a = format!("PH({})", deep[(rng.draw() as usize) % deep.len()]);
+        let b = format!("SN({})", NAMES[(rng.draw() % 4) as usize]);
+        let tree = if rng.draw().is_multiple_of(2) {
+            format!("PI(V({v}),{a},{b})")
+        } else {
+            format!("PI(V({v}),{b},{a})")
+        };
+        let s = lm::generate(&Lm::new(&synthesis(&tree)), false, &mut rng);
+        assert!(grammatical(&s));
+        let v = pad(&s);
+        tri_nonzero += (2..v.len()).all(|i| {
+            tri.get(&(v[i - 2].clone(), v[i - 1].clone()))
+                .is_some_and(|m| m.contains_key(&v[i]))
+        }) as usize;
+        graph_nonzero += lang_lm
+            .after(&s.iter().map(|x| x.as_str()).collect::<Vec<_>>())
+            .contains_key(&lang.exit) as usize;
+    }
+    // Samples from each model, judged by the report's own analysis.
+    let corpus_set: BTreeSet<&Vec<String>> = corpus.iter().collect();
+    let (mut tri_ok, mut tri_new, mut graph_ok) = (0, 0, 0);
+    for _ in 0..n {
+        let (mut a, mut b, mut s) = ("<S>".to_string(), "<S>".to_string(), Vec::new());
+        loop {
+            let t = rng.pick(&tri[&(a.clone(), b.clone())]);
+            if t == END {
+                break;
+            }
+            s.push(t.clone());
+            (a, b) = (b, t);
+        }
+        let ok = grammatical(&s);
+        tri_ok += ok as usize;
+        tri_new += (ok && !corpus_set.contains(&s)) as usize;
+        graph_ok += grammatical(&lm::generate(&lang_lm, false, &mut rng)) as usize;
+    }
+    println!(
+        "depth 2, {n} sentences: the trigram model gives {tri_nonzero} a probability above zero, the depth-1 graph {graph_nonzero}; \
+         {n} samples: trigram {tri_ok} grammatical ({tri_new} of them not in its corpus), graph {graph_ok}"
+    );
+    assert_eq!(
+        (tri_nonzero, graph_nonzero, tri_ok, tri_new, graph_ok),
+        (16, 0, 91, 29, 300)
+    );
 }
