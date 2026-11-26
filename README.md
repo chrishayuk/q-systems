@@ -146,7 +146,7 @@ vertex numbers**.
   - `-INV-` gives back exactly only what a one-to-one system made. A
     two-to-one system gives back all 64 candidates. The inverse of parity
     never stops. (E09)
-- **Deeper sentences.** Seven embedded clauses give 9,565,938 sentences in
+- **Deeper sentences.** Fourteen embedded clauses give 9,565,938 sentences in
   2,760 arrows, and every sentence tried analyses back to its one tree.
   (E10)
 - **Merging equal arrows** is an experimental extension, kept apart from the

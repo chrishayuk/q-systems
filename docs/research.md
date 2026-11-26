@@ -269,7 +269,7 @@ analysed instead.
 
 - **Synthesis grows with the tree, not with the sentences.** Each clause
   multiplies the sentences by three in a chain (2·3ᵈ). With clauses on both
-  sides it multiplies them far faster. At depth 3, seven clauses give
+  sides it multiplies them far faster. At depth 3, fifteen clauses (fourteen embedded) give
   9,565,938 sentences in 2,760 arrows, made in 3,108 applications. This is
   E08's fanning out, at work in C70's own grammar.
 - **Analysis grows with the sentence.** The longest analysis took 196

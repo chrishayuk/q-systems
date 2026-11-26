@@ -631,7 +631,7 @@ fn e11_e12_merging_equal_arrows() {
         ]
     );
     // C70's examples never make two equal arrows, so merging prints the same.
-    for e in ["abc", "mot", "culdesac", "paraphrase"] {
+    for e in ["abc", "mot", "culdesac", "paraphrase", "abc-inverse", "unstructure"] {
         let p = std::fs::read_to_string(format!("examples/{e}.q")).unwrap();
         let d = std::fs::read_to_string(format!("examples/{e}.dat")).unwrap();
         let (sys, runs) = qsystems::report::run_all(&p, &d, Limits::default()).unwrap();
